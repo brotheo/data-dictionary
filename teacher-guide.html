@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Detective Agency · Teacher Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&family=Special+Elite&display=swap">
+<style>
+/* Layout: case-file agency. Sticky command bar (views + class timer + rank), single reading column of "mission" sections, evidence board accents. */
+:root{
+  --paper:#eef2f7; --card:#ffffff; --ink:#16233a; --muted:#56667e; --line:#d5deea;
+  --accent:#1f5fd1; --accent-soft:#e3ecfc; --mark:#ffd84a; --onmark:#1d1600;
+  --pin:#cf3e36; --pin-soft:#fbe7e5; --ok:#1b7f53; --ok-soft:#e2f4ea;
+  --codebg:#0f1a2b; --codefg:#e2eaf6; --codemute:#7f93b2; --codestr:#9fe0b0; --codekw:#ffcf5c; --codenum:#ffa38f;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+  --stamp:"Special Elite", "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0d1420; --card:#151f30; --ink:#e5ecf6; --muted:#9aa9c0; --line:#26354d;
+  --accent:#78a6ff; --accent-soft:#1b2a45; --mark:#e9c234; --onmark:#1d1600;
+  --pin:#ff776d; --pin-soft:#3a1f22; --ok:#52c690; --ok-soft:#14302a;
+  --codebg:#090f1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0d1420; --card:#151f30; --ink:#e5ecf6; --muted:#9aa9c0; --line:#26354d;
+  --accent:#78a6ff; --accent-soft:#1b2a45; --mark:#e9c234; --onmark:#1d1600;
+  --pin:#ff776d; --pin-soft:#3a1f22; --ok:#52c690; --ok-soft:#14302a;
+  --codebg:#090f1a; color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{background:var(--paper);color:var(--ink);font:17px/1.6 var(--body)}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+code{font-family:var(--mono);font-size:.88em;background:var(--accent-soft);padding:.08em .35em;border-radius:5px}
+h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
+h2{font-size:clamp(1.6rem,4vw,2.2rem);font-weight:800}
+h3{font-size:1.2rem;font-weight:600;margin-top:1.6rem}
+p{margin:.5rem 0 1rem;max-width:68ch}
+ul,ol{padding-left:1.3rem;max-width:68ch}li{margin:.25rem 0}
+.hl{background:linear-gradient(transparent 58%,var(--mark) 58%);color:inherit;padding:0 .1em}
+
+/* command bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--card);border-bottom:1px solid var(--line);padding-inline:16px}
+.bar-in{max-width:1080px;margin:auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding-block:9px}
+.brand{font-family:var(--stamp);font-size:.95rem;letter-spacing:.04em;color:var(--pin);white-space:nowrap}
+.tabs{display:flex;gap:4px;background:var(--paper);padding:4px;border-radius:999px}
+.tabs a{font-weight:700;text-decoration:none;color:var(--muted);padding:6px 14px;border-radius:999px;font-size:.92rem}
+.tabs a[aria-current="page"]{background:var(--ink);color:var(--card)}
+.timer{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
+.timer select{font:600 .85rem var(--body);border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;padding:5px 6px;max-width:150px}
+.clock{font:600 1.15rem var(--mono);font-variant-numeric:tabular-nums;min-width:4.2ch;text-align:center}
+.clock.done{color:var(--pin);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+.ibtn{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;padding:5px 9px;font:700 .82rem var(--body);cursor:pointer}
+.ibtn:hover{border-color:var(--accent)}
+.rank{display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:700;background:var(--mark);color:var(--onmark);padding:5px 11px;border-radius:999px;white-space:nowrap}
+.rank small{font-family:var(--mono);font-weight:600}
+
+/* layout */
+.wrap{max-width:1080px;margin:auto;padding:28px 16px 70px}
+.view[hidden]{display:none}
+.hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:28px;align-items:end;padding-block:18px 30px;border-bottom:2px dashed var(--line);margin-bottom:28px}
+.casetag{font-family:var(--stamp);color:var(--muted);font-size:.95rem}
+.hero h1{font-size:clamp(2.3rem,7vw,4.2rem);font-weight:800;letter-spacing:-.02em;margin:.3rem 0 .8rem}
+.hero p{font-size:1.1rem}
+.stamp{display:inline-block;font-family:var(--stamp);color:var(--pin);border:3px solid var(--pin);padding:4px 12px;transform:rotate(-4deg);font-size:1.05rem;letter-spacing:.06em;border-radius:4px;opacity:.85}
+.dossier{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px 18px 14px;box-shadow:6px 6px 0 var(--line);position:relative}
+.dossier::before{content:"";position:absolute;top:-9px;left:24px;width:16px;height:16px;border-radius:50%;background:var(--pin);box-shadow:0 2px 0 #0003}
+.dossier dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;font-size:.94rem}
+.dossier dt{color:var(--muted);font-family:var(--mono);font-size:.82rem;padding-top:2px}
+.dossier dd{margin:0;font-weight:700}
+
+/* run sheet */
+.runsheet{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:8px 0 6px}
+.runsheet button{all:unset;cursor:pointer;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.runsheet button:hover,.runsheet button.on{border-color:var(--accent);background:var(--accent-soft)}
+.runsheet b{font-size:.88rem;line-height:1.2}
+.runsheet span{font:600 .8rem var(--mono);color:var(--muted)}
+.runsheet .bar-fill{height:5px;border-radius:3px;background:var(--accent);margin-top:4px}
+.hint-small{font-size:.86rem;color:var(--muted)}
+
+section.mission{padding-block:34px;border-bottom:1px solid var(--line)}
+.eyebrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:8px;font:700 .78rem var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.eyebrow .num{font-family:var(--stamp);font-size:1rem;letter-spacing:.02em;color:var(--pin);text-transform:none}
+.mins{font-family:var(--mono);letter-spacing:0;text-transform:none;background:var(--paper);border:1px solid var(--line);padding:1px 8px;border-radius:999px}
+.lead{font-size:1.08rem}
+
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
+.panel h4{margin:0 0 6px;font:700 1rem var(--body)}
+.note{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0;max-width:72ch}
+.note.warn{border-color:var(--pin);background:var(--pin-soft)}
+.note.good{border-color:var(--ok);background:var(--ok-soft)}
+.teacher{font-size:.92rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;margin-top:14px}
+.teacher b{font-family:var(--stamp);color:var(--ink);font-weight:400}
+
+/* code */
+.code{position:relative;margin:12px 0 18px;min-width:0}
+.code pre{margin:0;overflow-x:auto;background:var(--codebg);color:var(--codefg);padding:18px 18px 16px;border-radius:10px;font:.88rem/1.6 var(--mono);white-space:pre}
+.code pre code{background:none;padding:0;font-size:inherit;color:inherit}
+.code .copy{position:absolute;top:8px;right:8px;border:1px solid #ffffff2e;background:#ffffff14;color:#e2eaf6;border-radius:6px;padding:4px 9px;font:700 .75rem var(--body);cursor:pointer}
+.code .copy:hover{background:#ffffff2a}
+.tk-b{background:var(--mark);color:var(--onmark);border-radius:3px;font-weight:600}
+.ws{background:var(--card);border:2px solid var(--ink);border-radius:12px;padding:16px 18px 6px;margin:22px 0;box-shadow:5px 5px 0 var(--line);min-width:0}
+.ws-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 12px}
+.ws-head h3{margin:0}
+.ws-tag{font-family:var(--stamp);color:var(--pin);font-size:.95rem}
+.tk-c{color:var(--codemute);font-style:italic}.tk-s{color:var(--codestr)}.tk-k{color:var(--codekw)}.tk-n{color:var(--codenum)}
+.out{font:.85rem/1.5 var(--mono);background:var(--paper);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;white-space:pre;overflow-x:auto;margin:-8px 0 16px}
+.out::before{content:"OUTPUT";display:block;font:700 .66rem var(--body);letter-spacing:.14em;color:var(--muted);margin-bottom:4px}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{padding:8px 11px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--paper)}
+tbody tr:last-child td{border-bottom:0}
+tr.fail td{background:var(--pin-soft)}
+td.num,th.num{text-align:right}
+
+/* explorer */
+.explorer{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:14px}
+.controls{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end;margin-bottom:12px}
+.controls label{display:flex;flex-direction:column;gap:3px;font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.04em}
+.controls select,.controls input{font:600 .95rem var(--body);border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--paper);color:var(--ink);min-width:0}
+.livecode{font:.85rem var(--mono);background:var(--codebg);color:var(--codestr);padding:10px 12px;border-radius:8px;overflow-x:auto;white-space:pre;margin-bottom:10px}
+.livecode::before{content:"pandas ▸ ";color:var(--codemute)}
+.count{font-weight:700;font-size:.9rem;margin-bottom:8px}
+
+/* buttons, reveals */
+.btn{font:700 .92rem var(--body);border:0;border-radius:9px;padding:9px 15px;cursor:pointer;background:var(--accent);color:#fff}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.ghost:hover{border-color:var(--accent)}
+.btn.done{background:var(--ok)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;margin:12px 0}
+details>summary{cursor:pointer;padding:11px 16px;font-weight:700;list-style:none}
+details>summary::before{content:"▸ ";color:var(--accent)}
+details[open]>summary::before{content:"▾ "}
+details>.inner{padding:0 16px 14px}
+.tier{display:inline-block;font:700 .7rem var(--body);letter-spacing:.12em;padding:3px 8px;border-radius:999px;margin-bottom:6px}
+.t-b{background:#f1dcc6;color:#6d3f12}.t-s{background:#dde3ec;color:#334257}.t-g{background:#ffe9a3;color:#5b4300}
+.xp{font:600 .78rem var(--mono);color:var(--muted)}
+.complete{margin-top:22px;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+
+/* predictions */
+.predict{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.predict .panel label{display:block;font-weight:700;margin-bottom:8px}
+.predict input,.predict select{width:100%;font:600 1rem var(--body);border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--paper);color:var(--ink)}
+.truth{margin-top:10px;font-size:.93rem;padding:8px 10px;border-radius:8px;background:var(--ok-soft)}
+
+/* quiz + arena cards */
+.q{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0;min-width:0}
+.q .prompt{font-weight:700;margin-bottom:8px}
+.opts{display:grid;gap:6px}
+.opts label{display:flex;gap:9px;align-items:flex-start;padding:7px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--paper)}
+.opts label:hover{border-color:var(--accent)}
+.opts input{margin-top:5px}
+.fb{margin-top:8px;font-size:.93rem;font-weight:700}
+.fb.ok{color:var(--ok)}.fb.no{color:var(--pin)}
+.q.solved{border-color:var(--ok);box-shadow:inset 4px 0 0 var(--ok)}
+.q.flash{animation:flash 1.4s ease 2}
+@keyframes flash{50%{box-shadow:0 0 0 5px var(--mark)}}
+
+/* arena */
+.arena-hero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:start;padding-block:10px 26px;border-bottom:2px dashed var(--line)}
+.board{background:var(--codebg);color:var(--codefg);border-radius:12px;padding:16px;min-width:0}
+.board h3{margin:0 0 10px;color:var(--codekw);font-size:1rem;letter-spacing:.1em;text-transform:uppercase;font-family:var(--body)}
+.team{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto auto;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #ffffff1a}
+.team input{background:transparent;border:0;color:var(--codefg);font:700 .95rem var(--body);min-width:0;width:100%}
+.team .pts{font:600 1.2rem var(--mono);font-variant-numeric:tabular-nums;min-width:3ch;text-align:right;color:var(--codekw)}
+.team button{border:1px solid #ffffff30;background:#ffffff12;color:var(--codefg);border-radius:6px;padding:3px 7px;font:700 .78rem var(--body);cursor:pointer}
+.team.lead .pts::after{content:" ★"}
+.round-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+.answer-in{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.answer-in input{font:600 1rem var(--mono);border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--paper);color:var(--ink);width:12rem;max-width:100%}
+.hintline{font-size:.9rem;color:var(--muted);margin-top:6px}
+.dip{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+
+footer{padding:28px 16px;text-align:center;color:var(--muted);font-size:.85rem;border-top:1px solid var(--line)}
+
+@media (max-width:860px){
+  .hero,.arena-hero{grid-template-columns:1fr}
+  .runsheet{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .grid3,.predict{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr}
+  .timer{margin-left:0}
+}
+@media (max-width:480px){.runsheet{grid-template-columns:repeat(2,minmax(0,1fr))}body{font-size:16px}}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<style>
+.tp{max-width:960px;margin:auto;padding:28px 16px 60px}
+.tp h2{margin-top:2.2rem;padding-top:1.2rem;border-top:2px dashed var(--line)}
+.tp h2:first-of-type{border-top:0}
+.toc{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0}
+.toc a{font:700 .85rem var(--body);text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);padding:5px 11px;border-radius:999px}
+.toc a:hover{border-color:var(--accent)}
+td{white-space:normal;vertical-align:top}
+.k{font-family:var(--mono);font-weight:600;color:var(--ok)}
+.min{font-family:var(--mono);font-weight:600;white-space:nowrap}
+@media print{.toc,.copy{display:none!important}body{background:#fff}.code pre{white-space:pre-wrap;background:#f3f3f3!important;color:#111!important}.code pre span{color:#111!important;background:none!important}section,table,.code{break-inside:avoid}.bar{display:none}}
+</style>
+
+<div class="bar"><div class="bar-in"><span class="brand">DDA · TEACHER GUIDE</span><span class="hint-small" style="margin-left:auto">Not for students: contains every answer</span></div></div>
+
+<div class="tp">
+<header class="hero" style="grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)">
+  <div>
+    <div class="casetag">Teacher guide · Python · pandas · 90 minutes</div>
+    <h1>The Case of the 20 Report Cards</h1>
+    <p>Lesson plan, timings, teacher moves, misconceptions and the full answer key for the student page and Challenge Arena. Every answer below was checked by running the code on the lesson dataset.</p>
+    <span class="stamp">TEACHER COPY · ANSWERS INSIDE</span>
+  </div>
+  <aside class="dossier"><dl>
+    <dt>Duration</dt><dd>90 minutes</dd>
+    <dt>Level</dt><dd>Beginner → intermediate Python</dd>
+    <dt>Prior</dt><dd>Variables, lists, dictionaries, functions</dd>
+    <dt>Kit</dt><dd>Jupyter or Google Colab with pandas</dd>
+    <dt>Student file</dt><dd>student-performance-data-detective.html</dd>
+  </dl></aside>
+</header>
+
+<nav class="toc" aria-label="Contents">
+  <a href="#plan">Lesson plan</a><a href="#before">Before the lesson</a><a href="#misc">Misconceptions</a><a href="#ws">Worksheet answers</a><a href="#ladders">Ladder answers</a><a href="#arena">Arena 1 key</a><a href="#arena2">Arena 2 key</a><a href="#exit">Exit ticket</a><a href="#rubric">Project rubric</a><a href="#numbers">Key numbers</a><a href="#diff">Differentiation</a>
+</nav>
+
+<section id="objectives">
+<div class="grid2">
+  <div class="panel"><h4>Learning objectives</h4><ul>
+    <li>Filter rows with <code>df.loc[]</code>; combine conditions with <code>&amp;</code> and <code>|</code></li>
+    <li>Sort with <code>sort_values()</code> and select top results with <code>head()</code></li>
+    <li>Summarise groups with <code>groupby()</code> and calculate a correlation</li>
+    <li>Write reusable functions that take a DataFrame as a parameter</li></ul></div>
+  <div class="panel"><h4>Success criteria</h4><ul>
+    <li>Completes the three core worksheets with output matching the key</li>
+    <li>Explains why <code>and</code> fails between pandas conditions</li>
+    <li>States that correlation does not prove cause</li>
+    <li>Spots that Year and Subject are confounded in this dataset</li></ul></div>
+</div>
+</section>
+
+<h2 id="plan">Lesson plan</h2>
+<div class="tbl"><table>
+<thead><tr><th>Time</th><th>Stage</th><th>Students do</th><th>Teacher does</th></tr></thead>
+<tbody>
+<tr><td class="min">0–5</td><td><b>Warm-up · Gut check</b></td><td>Lock in three predictions on the page (average score, number above 80, study vs score).</td><td>Take 3 guesses for the average aloud. Write the highest and lowest on the board. Answers: 77.5, 10, strong positive link.</td></tr>
+<tr><td class="min">5–12</td><td><b>Case file · Setup</b></td><td>Copy Cell 1 and Cell 2 into a notebook and run them. Play with the evidence explorer.</td><td>Check every screen shows <code>(20, 8)</code>. Point out the live pandas code strip in the explorer: it's the bridge to Mission 1.</td></tr>
+<tr><td class="min">12–27</td><td><b>Mission 1 · Filter</b></td><td>Read 1.1–1.4 aloud in pairs, then complete the <b>Filtering worksheet</b> (6 min). Fast finishers: challenge ladder.</td><td>Live-code 1.2 and deliberately use <code>and</code> to show the error. Circulate during the worksheet; the most common bug is missing brackets.</td></tr>
+<tr><td class="min">27–39</td><td><b>Mission 2 · Sort &amp; rank</b></td><td>Work through 2.1–2.4, then the <b>Sorting worksheet</b> (5 min).</td><td>Ask: "What does <code>sort_values()</code> do with no arguments?" before anyone runs it. Use the 2.4 discussion question.</td></tr>
+<tr><td class="min">39–55</td><td><b>Mission 3 · Patterns</b></td><td>Run 3.1–3.4, complete the <b>Analysis worksheet</b> (7 min), then the plot twist.</td><td>Return to the warm-up guesses: who was closest? Class vote "Is Maths the easiest subject?" <em>before</em> showing the crosstab.</td></tr>
+<tr><td class="min">55–85</td><td><b>Challenge Arena</b></td><td>Teams of 2–4. R1 Predict (6 min) · R2 Bug hunt (7) · R3 Code cracker (10) · R4 Mystery (7). Fast finishers: Boss level.</td><td>Project the scoreboard. Award +10/+25 for correct answers and good explanations. Use "Lucky dip" to cold-call a team.</td></tr>
+<tr><td class="min">85–90</td><td><b>Exit ticket</b></td><td>6 multiple-choice questions, individually.</td><td>Note who misses Q5 or Q6 (causation, confounding) for next lesson's starter. Boss level is homework.</td></tr>
+</tbody></table></div>
+<p class="hint-small">If you run short of time: skip the challenge ladders and Arena Round 2. If you have spare time: start the Boss level in class.</p>
+
+<h2 id="before">Before the lesson</h2>
+<ul>
+  <li>Open Google Colab on one machine and run Cell 1 to confirm pandas loads on the school network.</li>
+  <li><code>display()</code> works in Jupyter and Colab only. Students using a plain <code>.py</code> file or IDLE should use <code>print()</code>.</li>
+  <li>Decide teams for the Arena in advance; rename them on the scoreboard (click a team name).</li>
+  <li>XP and team scores are stored in each browser only. Use one teacher machine for the scoreboard.</li>
+  <li>The class timer in the top bar of the student page counts down each stage; tap a stage in the run sheet to load it.</li>
+</ul>
+
+<h2 id="misc">Common misconceptions</h2>
+<div class="tbl"><table>
+<thead><tr><th>What students write</th><th>What happens</th><th>Fix / question to ask</th></tr></thead>
+<tbody>
+<tr><td><code>df.loc[df["Score"] &gt; 80 and df["Year"] == 10]</code></td><td><code>ValueError: truth value of a Series is ambiguous</code></td><td>Use <code>&amp;</code>. "How many True/False values does <code>df["Score"] &gt; 80</code> contain?"</td></tr>
+<tr><td><code>df.loc[df["Year"] == 10 &amp; df["Score"] &gt;= 80]</code></td><td><code>TypeError</code> or wrong rows</td><td>Bracket each condition. <code>&amp;</code> is evaluated before <code>==</code>.</td></tr>
+<tr><td><code>df.sort_values("Score").head(5)</code> as "top five"</td><td>Returns the bottom five</td><td>Add <code>ascending=False</code>.</td></tr>
+<tr><td><code>df["subject"]</code></td><td><code>KeyError</code></td><td>Column names are case-sensitive. Print <code>df.columns</code>.</td></tr>
+<tr><td><code>df.groupby("Subject").mean()</code></td><td><code>TypeError</code> in pandas 2 (text columns)</td><td>Select the column: <code>df.groupby("Subject")["Score"].mean()</code>.</td></tr>
+<tr><td><code>df["Score"] = 80</code> to filter</td><td>Overwrites every score with 80</td><td><code>=</code> assigns, <code>==</code> compares. Rerun Cell 1 to restore the data.</td></tr>
+<tr><td>"Correlation is 0.96, so studying causes higher scores"</td><td>Overclaim</td><td>"What else rises with study hours?" (attendance, r = 0.99)</td></tr>
+<tr><td>"Maths is the easiest subject"</td><td>Ignores confounding</td><td>Run <code>pd.crosstab(df["Year"], df["Subject"])</code>.</td></tr>
+</tbody></table></div>
+
+<h2 id="ws">Worksheet answers</h2>
+<h3>Lesson 1 · Filtering</h3>
+<div class="code"><pre><code>high_scorers = df.loc[df["Score"] &gt; 80]
+print("Students scoring above 80:")
+print(high_scorers[["Name", "Subject", "Score"]])
+
+low_attendance = df.loc[df["Attendance"] &lt; 85]
+print("\nStudents with attendance below 85%:")
+print(low_attendance[["Name", "Attendance"]])
+
+year10_computing = df.loc[(df["Year"] == 10) &amp; (df["Subject"] == "Computing")]
+print("\nYear 10 Computing students:")
+print(year10_computing[["Name", "Year", "Subject", "Score"]])</code></pre></div>
+<div class="out">Task 1 → 10 rows: Alex 85, Bella 92, Ethan 88, George 95, Hana 81, Lily 90, Nina 84, Priya 91, Sofia 87, Zara 96
+Task 2 → 5 rows: Fiona 78, Julia 82, Marcus 72, Ryan 84, Thomas 76
+Task 3 → 1 row:  Alex (Year 10, Computing, 85)</div>
+<p class="hint-small">Accept any sensible column selection, or printing the whole filtered DataFrame. Task 3 returning one row is correct.</p>
+
+<h3>Lesson 2 · Sorting and ranking</h3>
+<div class="code"><pre><code>ranked_students = df.sort_values("Score", ascending=False)
+print("Student rankings:")
+print(ranked_students[["Name", "Subject", "Score"]])
+
+top_five = ranked_students.head(5)
+print("\nTop five students:")
+print(top_five[["Name", "Subject", "Score"]])
+
+study_ranking = df.sort_values("Study_Hours", ascending=False)
+print("\nStudents ranked by study hours:")
+print(study_ranking[["Name", "Study_Hours", "Score"]])</code></pre></div>
+<div class="out">Task 1 → Zara 96, George 95, Bella 92, Priya 91, Lily 90, Ethan 88, Sofia 87, Alex 85, Nina 84, Hana 81,
+         Kevin 78, Oliver 76, Diana 74, Isaac 72, Ryan 69, Charlie 67, Julia 63, Thomas 58, Fiona 56, Marcus 48
+Task 2 → Zara 96, George 95, Bella 92, Priya 91, Lily 90
+Task 3 → Zara 15, George 14, Priya 13, Bella 12, Lily 11, then Ethan/Sofia 10 … Marcus 2</div>
+<p class="hint-small">Talking point: the top four scorers are also the top four for study hours. Tied rows (e.g. 10 hours) may print in either order.</p>
+
+<h3>Lesson 3 · Analysis and decisions</h3>
+<div class="code"><pre><code>subject_averages = df.groupby("Subject")["Score"].mean()
+print("Average score by subject:")
+print(subject_averages.round(2))
+
+attendance_averages = df.groupby("Subject")["Attendance"].mean()
+print("\nAverage attendance by subject:")
+print(attendance_averages.round(2))
+
+study_score_correlation = df["Study_Hours"].corr(df["Score"])
+print("\nStudy hours and score correlation:")
+print(round(study_score_correlation, 2))
+
+passed_low_attendance = df.loc[(df["Result"] == "Pass") &amp; (df["Attendance"] &lt; 85)]
+print("\nStudents who passed with low attendance:")
+print(passed_low_attendance[["Name", "Score", "Attendance"]])</code></pre></div>
+<div class="out">Task 1 → Computing 73.43 · Mathematics 84.00 · Science 74.67
+Task 2 → Computing 87.71 · Mathematics 93.57 · Science 88.50
+Task 3 → 0.96  (unrounded 0.957…)
+Task 4 → 4 rows: Fiona 56/78%, Julia 63/82%, Ryan 69/84%, Thomas 58/76%</div>
+<p class="hint-small">Decision question: all four passed but none scored above 69. Marcus (72%) is absent because he failed. Accept <code>df["Score"] &gt;= 50</code> instead of <code>df["Result"] == "Pass"</code>.</p>
+
+<h3>Lesson 4 · Reusable toolkit (Boss level)</h3>
+<div class="code"><pre><code>def filter_by_score(dataframe, minimum_score):
+    result = dataframe.loc[dataframe["Score"] &gt; minimum_score]
+    return result
+
+def get_top_students(dataframe, number_of_students):
+    result = dataframe.sort_values("Score", ascending=False)
+    return result.head(number_of_students)
+
+def calculate_average_score(dataframe):
+    average = dataframe["Score"].mean()
+    return round(average, 2)
+
+print("Students scoring above 80:")
+print(filter_by_score(df, 80)[["Name", "Subject", "Score"]])
+print("\nTop five students:")
+print(get_top_students(df, 5)[["Name", "Subject", "Score"]])
+print("\nAverage student score:")
+print(calculate_average_score(df))</code></pre></div>
+<div class="out">filter_by_score(df, 80)     → 10 rows (same as Lesson 1 Task 1)
+get_top_students(df, 5)     → Zara 96, George 95, Bella 92, Priya 91, Lily 90
+calculate_average_score(df) → 77.5
+Extra tests: filter_by_score(df, 95) → 1 row (Zara) · Science average → 74.67</div>
+<div class="panel"><h4>Model findings (Task 5)</h4><ol style="margin:0">
+  <li><b>Subjects:</b> Mathematics had the highest average (84.0), but every Maths student is in Year 11, so subject and year group can't be separated.</li>
+  <li><b>Study hours:</b> strong positive association, r = 0.96; the 9+ hours group averaged 89.33 vs 56.25 for 1–4 hours.</li>
+  <li><b>Attendance:</b> 90–100% attendance averaged 86.75; the three students below 80% averaged 54.0. Attendance vs score r = 0.99.</li>
+  <li><b>Conclusion:</b> strong associations, not proof of cause; 20 fictional records; next step is data with every year group in every subject.</li></ol></div>
+<p class="hint-small">Watch for functions that use <code>df</code> inside instead of the <code>dataframe</code> parameter. They still "work" on this data but aren't reusable; deduct in the rubric.</p>
+
+<h2 id="ladders">Challenge ladder answers</h2>
+<div class="tbl"><table>
+<thead><tr><th>Mission</th><th>Tier</th><th>Answer</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Bronze · below 50</td><td>Marcus (48, 72%)</td></tr>
+<tr><td>1</td><td>Silver · Y9, ≥70, attendance &gt;85</td><td>Diana, George, Priya</td></tr>
+<tr><td>1</td><td>Gold · <code>filter_by_subject</code></td><td><code>return data.loc[data["Subject"] == subject]</code> · Science → 6 rows</td></tr>
+<tr><td>1</td><td>Guided practice</td><td>Below 60: Fiona, Marcus, Thomas · Y11 &amp; attendance ≥95: Bella, Ethan, Zara · Maths ≥85: Bella, Ethan, Zara</td></tr>
+<tr><td>2</td><td>Quick-fire</td><td>Lowest 3: Marcus 48, Fiona 56, Thomas 58 · Top 5 attendance: George 99, Zara 99, Bella 98, Priya 98, Ethan 97</td></tr>
+<tr><td>3</td><td>Practice Qs</td><td>Highest subject: Mathematics 84.0 · Mean attendance 90.0 · Below 50: 1 · Causation: no</td></tr>
+</tbody></table></div>
+
+<h2 id="arena">Challenge Arena key</h2>
+<h3>Round 1 · Predict the output (20 XP each)</h3>
+<div class="tbl"><table>
+<thead><tr><th>#</th><th>Code</th><th>Answer</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><code>len(df.loc[df["Score"] &gt; 80])</code></td><td class="k">10</td><td>Hana's 81 counts; no one scored exactly 80</td></tr>
+<tr><td>2</td><td><code>df["Score"].max() - df["Score"].min()</code></td><td class="k">48</td><td>96 − 48</td></tr>
+<tr><td>3</td><td><code>df.sort_values("Score").iloc[0]["Name"]</code></td><td class="k">Marcus</td><td>Ascending sort, lowest first</td></tr>
+<tr><td>4</td><td><code>(df["Result"] == "Fail").sum()</code></td><td class="k">1</td><td>True counts as 1</td></tr>
+<tr><td>5</td><td><code>…count()["Science"]</code></td><td class="k">6</td><td>count() counts rows</td></tr>
+<tr><td>6</td><td><code>df.loc[df["Attendance"] &lt; 80, "Name"].tolist()</code></td><td class="k">['Fiona', 'Marcus', 'Thomas']</td><td>Julia has 82</td></tr>
+</tbody></table></div>
+
+<h3>Round 2 · Bug hunt (30 XP each)</h3>
+<div class="tbl"><table>
+<thead><tr><th>#</th><th>Bug</th><th>Fix</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><code>and</code> between Series</td><td><code>(df["Score"] &gt; 80) &amp; (df["Year"] == 10)</code></td></tr>
+<tr><td>2</td><td>Missing brackets with <code>&amp;</code></td><td>Bracket each comparison</td></tr>
+<tr><td>3</td><td>Default ascending sort</td><td><code>ascending=False</code> (or <code>.tail(5)</code>)</td></tr>
+<tr><td>4</td><td><code>"subject"</code> lowercase</td><td><code>"Subject"</code></td></tr>
+<tr><td>5</td><td><code>groupby().mean()</code> on text columns</td><td><code>df.groupby("Subject")["Score"].mean()</code></td></tr>
+</tbody></table></div>
+
+<h3>Round 3 · Code cracker</h3>
+<div class="tbl"><table>
+<thead><tr><th>Tier</th><th>Question</th><th>Answer</th><th>Code</th></tr></thead>
+<tbody>
+<tr><td>Bronze 30</td><td>Scores above 80</td><td class="k">10</td><td><code>(df["Score"] &gt; 80).sum()</code></td></tr>
+<tr><td>Bronze 30</td><td>Median score</td><td class="k">79.5</td><td><code>df["Score"].median()</code></td></tr>
+<tr><td>Bronze 30</td><td>Total study hours</td><td class="k">158</td><td><code>df["Study_Hours"].sum()</code></td></tr>
+<tr><td>Silver 50</td><td>Computing mean attendance</td><td class="k">87.71</td><td><code>df.loc[df["Subject"] == "Computing", "Attendance"].mean()</code></td></tr>
+<tr><td>Silver 50</td><td>Scores above the mean</td><td class="k">11</td><td><code>(df["Score"] &gt; df["Score"].mean()).sum()</code></td></tr>
+<tr><td>Silver 50</td><td>Year with highest mean</td><td class="k">11</td><td><code>df.groupby("Year")["Score"].mean()</code> → 71.5 / 76.14 / 84.0</td></tr>
+<tr><td>Gold 80</td><td>Mean score, 10+ hours</td><td class="k">91.29</td><td><code>df.loc[df["Study_Hours"] &gt;= 10, "Score"].mean()</code> (under 10: 70.08)</td></tr>
+<tr><td>Gold 80</td><td>Top Points_per_Hour</td><td class="k">Marcus</td><td>48 ÷ 2 = 24. Discuss: a ratio rewards small denominators, so the lowest scorer tops it.</td></tr>
+</tbody></table></div>
+<p class="hint-small">The page accepts numeric answers within ±0.01 and names in any capitalisation.</p>
+
+<h3>Round 4 · Mystery files (60 XP each)</h3>
+<ol>
+  <li><b>"Maths is the easiest exam."</b> Answer: <b>we can't tell</b>. Every Maths student is in Year 11 and every Year 11 student took Maths, so subject and year group are confounded.</li>
+  <li><b>"If I study 15 hours I'll get 96."</b> Answer: <b>wrong</b>. Correlation shows variables move together in this data; attendance (r = 0.99) and unmeasured factors move with them too.</li>
+</ol>
+
+
+<h2 id="arena2">Arena 2 · The Tuck Shop Takings (90-minute solo class)</h2>
+<p>The whole class is problem solving. He works alone through five rounds on a new dataset: 24 tuck-shop sales, a <code>prices</code> and a <code>categories</code> dictionary, and a data dictionary of column rules. Five records are deliberately broken. The final round shows that a cleaning decision changes the conclusion.</p>
+<div class="tbl"><table>
+<thead><tr><th>Time</th><th>Stage</th><th>Your role</th></tr></thead>
+<tbody>
+<tr><td class="min">0–6</td><td><b>Briefing</b></td><td>Read the data dictionary together. Ask: "What is a data dictionary for?" Then he runs Cell 1.</td></tr>
+<tr><td class="min">6–14</td><td><b>R1 Read the rulebook</b></td><td>No code. If he guesses, ask him to point to the row in the table that proves it.</td></tr>
+<tr><td class="min">14–26</td><td><b>R2 Dictionary drills</b></td><td>Predict first, then run. Spend time on R2e (the counting pattern) and R2f (case-sensitive keys).</td></tr>
+<tr><td class="min">26–46</td><td><b>R3 Clean the evidence</b></td><td>The core task. Let him struggle a little before the hint. Ask why "cookie" is fixed but "Pizza" is removed.</td></tr>
+<tr><td class="min">46–70</td><td><b>R4 Solve the problems</b></td><td>Bronze → Silver → Gold. Push for him to explain each answer in one sentence.</td></tr>
+<tr><td class="min">70–82</td><td><b>R5 The missing money</b></td><td>Let him find Thursday. Then ask: "What would you have found if you'd deleted the 'cookie' row?"</td></tr>
+<tr><td class="min">82–90</td><td><b>Report note</b></td><td>3-sentence note to the manager. Boss level (functions returning dictionaries) as homework.</td></tr>
+</tbody></table></div>
+
+<h3>The five broken records</h3>
+<div class="tbl"><table>
+<thead><tr><th>Row</th><th>Problem</th><th>Rule broken</th><th>Action</th></tr></thead>
+<tbody>
+<tr><td>Order 14 · Crisps × 0</td><td>Zero quantity</td><td>Quantity 1–10</td><td>Remove</td></tr>
+<tr><td>Order 16 · "cookie" × 4 · Cash</td><td>Lowercase item</td><td>Item must match a key exactly</td><td><b>Fix</b> with <code>.str.title()</code></td></tr>
+<tr><td>Order 20 (second copy)</td><td>Duplicate receipt</td><td>Order_ID unique</td><td>Remove, keep first</td></tr>
+<tr><td>Order 22 · Pizza</td><td>Not on the price list</td><td>Item must match a key</td><td>Remove</td></tr>
+<tr><td>Order 23 · Year 12</td><td>Year not served</td><td>Year_Group 9–11</td><td>Remove</td></tr>
+</tbody></table></div>
+<p class="hint-small">24 rows − 4 removed = <b>20 clean rows</b>. 19 means he deleted the "cookie" row; the page tells him so.</p>
+
+<h3>Cleaning worksheet solution</h3>
+<div class="code"><pre><code>df = raw.drop_duplicates(subset="Order_ID").copy()
+
+df["Item"] = df["Item"].str.title()
+
+valid_item = df["Item"].isin(prices.keys())
+valid_qty  = df["Quantity"].between(1, 10)
+valid_year = df["Year_Group"].isin([9, 10, 11])
+df = df.loc[valid_item &amp; valid_qty &amp; valid_year].copy()
+
+df["Price"]    = df["Item"].map(prices)
+df["Category"] = df["Item"].map(categories)
+df["Revenue"]  = df["Price"] * df["Quantity"]
+
+print("Clean rows:", len(df))   # 20</code></pre></div>
+<p class="hint-small">The worksheet line is <code>df = raw.______</code>; adding <code>.copy()</code> is good practice and avoids a pandas warning in some versions. Accept <code>list(prices)</code> or <code>prices</code> itself inside <code>isin()</code>. Watch for <code>.str.capitalize()</code>, which turns "Fruit Cup" into "Fruit cup" and silently removes 2 more rows (18 clean rows).</p>
+
+<h3>Round 1 · Read the rulebook (20 XP each)</h3>
+<div class="tbl"><table>
+<thead><tr><th>#</th><th>Question</th><th>Answer</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Which column must be unique?</td><td class="k">Order_ID</td></tr>
+<tr><td>2</td><td>Order 14, 0 Crisps</td><td class="k">Invalid: Quantity 1–10</td></tr>
+<tr><td>3</td><td>Order 23, Year 12</td><td class="k">Invalid: Years 9–11 only</td></tr>
+<tr><td>4</td><td>Where does Price come from?</td><td class="k">The prices dictionary</td></tr>
+<tr><td>5</td><td>Which record is valid?</td><td class="k">7 · Tue · Fruit Cup · 1 · Year 9 · Card</td></tr>
+<tr><td>6</td><td>Type of Revenue</td><td class="k">float</td></tr>
+</tbody></table></div>
+
+<h3>Round 2 · Dictionary drills (20 XP each)</h3>
+<div class="tbl"><table>
+<thead><tr><th>#</th><th>Code</th><th>Output</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><code>prices["Juice"]</code></td><td class="k">2.0</td></tr>
+<tr><td>2</td><td><code>prices.get("Pizza", 0)</code></td><td class="k">0</td></tr>
+<tr><td>3</td><td><code>len(prices), len(set(categories.values()))</code></td><td class="k">7 3</td></tr>
+<tr><td>4</td><td>Loop printing items costing ≥ 3</td><td class="k">Sandwich, Noodles</td></tr>
+<tr><td>5</td><td>Counting pattern with <code>.get(x, 0) + 1</code></td><td class="k">{'Cookie': 2, 'Juice': 1}</td></tr>
+<tr><td>6</td><td><code>"cookie" in prices</code></td><td class="k">False</td></tr>
+<tr><td>7</td><td><code>Series(["Water","Pizza"]).map(prices)</code></td><td class="k">[1.0, nan]</td></tr>
+</tbody></table></div>
+
+<h3>Round 3 · Clean the evidence (30 XP each, on <code>raw</code>)</h3>
+<div class="tbl"><table>
+<thead><tr><th>Question</th><th>Answer</th><th>Code</th></tr></thead>
+<tbody>
+<tr><td>Rows in raw</td><td class="k">24</td><td><code>len(raw)</code></td></tr>
+<tr><td>Repeated Order_IDs</td><td class="k">1</td><td><code>raw["Order_ID"].duplicated().sum()</code></td></tr>
+<tr><td>Which ID repeats</td><td class="k">20</td><td><code>raw.loc[raw["Order_ID"].duplicated(), "Order_ID"]</code></td></tr>
+<tr><td>Items not in prices</td><td class="k">2</td><td>"cookie" and "Pizza"</td></tr>
+<tr><td>Quantity rule breaks</td><td class="k">1</td><td>Order 14</td></tr>
+<tr><td>Year_Group rule break</td><td class="k">23</td><td><code>raw.loc[~raw["Year_Group"].isin([9, 10, 11])]</code></td></tr>
+<tr><td>Clean rows (worksheet)</td><td class="k">20</td><td>See solution above</td></tr>
+</tbody></table></div>
+
+<h3>Round 4 · Solve the problems (on clean <code>df</code>)</h3>
+<div class="tbl"><table>
+<thead><tr><th>Tier</th><th>Question</th><th>Answer</th><th>Code</th></tr></thead>
+<tbody>
+<tr><td>Bronze 30</td><td>Units sold</td><td class="k">56</td><td><code>df["Quantity"].sum()</code></td></tr>
+<tr><td>Bronze 30</td><td>Card orders</td><td class="k">10</td><td><code>(df["Payment"] == "Card").sum()</code></td></tr>
+<tr><td>Bronze 30</td><td>Monday revenue</td><td class="k">$16.00</td><td><code>df.loc[df["Day"] == "Mon", "Revenue"].sum()</code></td></tr>
+<tr><td>Silver 50</td><td>Total revenue</td><td class="k">$115.10</td><td><code>df["Revenue"].sum()</code></td></tr>
+<tr><td>Silver 50</td><td>Most units sold</td><td class="k">Cookie (20)</td><td><code>df.groupby("Item")["Quantity"].sum()</code></td></tr>
+<tr><td>Silver 50</td><td>Best day</td><td class="k">Fri ($35.00)</td><td>Mon 16.00 · Tue 21.60 · Wed 20.00 · Thu 22.50 · Fri 35.00</td></tr>
+<tr><td>Gold 80</td><td>Top category</td><td class="k">Meal ($52.00)</td><td>Snack 41.10 · Drink 22.00</td></tr>
+<tr><td>Gold 80</td><td>Average per order</td><td class="k">$5.76</td><td><code>df["Revenue"].mean()</code></td></tr>
+<tr><td>Gold 80</td><td>Top-spending year</td><td class="k">10 ($43.10)</td><td>Y9 33.00 · Y11 39.00</td></tr>
+<tr><td>Gold 80</td><td>Lowest-revenue item</td><td class="k">Crisps ($3.60)</td><td>Only 1 order, so weak evidence for dropping it</td></tr>
+</tbody></table></div>
+<p class="hint-small">Revenue per item: Cookie 30.00 · Sandwich 28.00 · Noodles 24.00 · Juice 12.00 · Water 10.00 · Fruit Cup 7.50 · Crisps 3.60.</p>
+
+<h3>Round 5 · The missing money (60 XP each)</h3>
+<div class="code"><pre><code>cash = df.loc[df["Payment"] == "Cash"]
+expected = cash.groupby("Day")["Revenue"].sum().to_dict()
+
+for day, counted in cash_box.items():
+    should_be = round(expected[day], 2)
+    difference = round(should_be - counted, 2)
+    print(day, "expected", should_be, "counted", counted, "difference", difference)</code></pre></div>
+<div class="out">Mon expected 8.5 counted 8.5 difference 0.0
+Tue expected 11.1 counted 11.1 difference 0.0
+Wed expected 9.0 counted 9.0 difference 0.0
+Thu expected 12.0 counted 6.0 difference 6.0
+Fri expected 11.0 counted 11.0 difference 0.0</div>
+<ul>
+  <li>Expected cash for the week: <span class="k">$51.60</span> · in the box: <span class="k">$45.60</span> · missing: <span class="k">$6.00</span> · day: <span class="k">Thursday</span></li>
+  <li>Explained by <b>order 16</b> (4 × "cookie" × $1.50 = $6.00, paid in cash).</li>
+  <li><b>The teaching point:</b> if he deletes the "cookie" row instead of fixing it, Thursday's expected cash drops to $6.00 and the box appears to balance. A careless cleaning choice hides the problem.</li>
+</ul>
+
+<h3>Boss level · expected output</h3>
+<div class="out">item_report(df, "Cookie") → {'item': 'Cookie', 'orders': 5, 'quantity': 20, 'revenue': 30.0}
+daily_totals(df)          → {'Mon': 16.0, 'Tue': 21.6, 'Wed': 20.0, 'Thu': 22.5, 'Fri': 35.0}
+max(totals, key=totals.get) → 'Fri'
+item_report(df, "Pizza")  → 0 orders, 0 quantity, 0.0 revenue</div>
+<p class="hint-small">Accept answers without <code>round()</code> if the values match. <code>max(totals, key=totals.get)</code> is new for most students; a loop that tracks the biggest value so far is equally good.</p>
+
+<div class="panel" style="margin-top:14px"><h4>Model note to the manager</h4>
+<p style="margin-bottom:0">The tuck shop took $115.10 this week, and Friday was the best day at $35.00. Five records broke the data dictionary: I fixed one typing error (order 16) and removed a duplicate, a zero-quantity sale, an item not on the price list and a Year 12 sale. Thursday's cash box is $6.00 short, which matches order 16 (4 cookies paid in cash).</p></div>
+
+<h2 id="exit">Exit ticket key</h2>
+<div class="tbl"><table>
+<thead><tr><th>Q</th><th>Answer</th><th>If missed, revisit</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><code>df.loc[df["Score"] &gt; 80]</code></td><td>Mission 1.1</td></tr>
+<tr><td>2</td><td><code>&amp;</code></td><td>Mission 1.2, Bug hunt 1</td></tr>
+<tr><td>3</td><td><code>ascending=False</code></td><td>Mission 2.1</td></tr>
+<tr><td>4</td><td>One average per subject</td><td>Mission 3.2</td></tr>
+<tr><td>5</td><td>Associated; cause not proven</td><td>Mission 3.4, Mystery 2</td></tr>
+<tr><td>6</td><td>Year and subject are confounded</td><td>Plot twist, Mystery 1</td></tr>
+</tbody></table></div>
+
+<h2 id="rubric">Project rubric · 40 points</h2>
+<div class="tbl"><table>
+<thead><tr><th>Criterion</th><th class="num">Pts</th><th>Full marks</th><th>Partial</th></tr></thead>
+<tbody>
+<tr><td>Functions (Tasks 1–3)</td><td class="num">15</td><td>All three use their parameters and return correct results (5 each)</td><td>Works but uses <code>df</code> instead of the parameter: 3 each</td></tr>
+<tr><td>Testing (Task 4)</td><td class="num">5</td><td>Every function called; output matches the key</td><td>Some calls missing or wrong</td></tr>
+<tr><td>Findings (Task 5)</td><td class="num">15</td><td>Three findings, each quoting a correct number (5 each)</td><td>Finding without evidence: 2</td></tr>
+<tr><td>Conclusion and limitation</td><td class="num">5</td><td>Names correlation vs cause, sample size, or confounding</td><td>Vague limitation ("needs more data"): 2</td></tr>
+</tbody></table></div>
+
+<h2 id="numbers">Key numbers</h2>
+<div class="tbl"><table>
+<thead><tr><th>Measure</th><th>Value</th><th>Measure</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Rows × columns</td><td class="k">20 × 8</td><td>Mean study hours</td><td class="k">7.9</td></tr>
+<tr><td>Mean score</td><td class="k">77.5</td><td>Scores above 80</td><td class="k">10</td></tr>
+<tr><td>Median score</td><td class="k">79.5</td><td>Fails (below 50)</td><td class="k">1 · Marcus 48</td></tr>
+<tr><td>Score range</td><td class="k">48–96</td><td>Study hours vs score r</td><td class="k">0.96</td></tr>
+<tr><td>Mean attendance</td><td class="k">90.0</td><td>Attendance vs score r</td><td class="k">0.99</td></tr>
+<tr><td>Year means (9 / 10 / 11)</td><td class="k">71.5 / 76.14 / 84.0</td><td>Attendance bands &lt;80 / 80–89 / 90+</td><td class="k">54.0 / 69.4 / 86.75</td></tr>
+<tr><td>Year × subject</td><td colspan="3">Y9: 6 Computing · Y10: 1 Computing, 6 Science · Y11: 7 Mathematics</td></tr>
+</tbody></table></div>
+
+<h2 id="diff">Differentiation</h2>
+<div class="grid3">
+  <div class="panel"><h4>Support</h4><ul><li>Give the first line of each worksheet task filled in</li><li>Use the evidence explorer's live code strip as a template</li><li>Pair with a confident coder for the Arena</li></ul></div>
+  <div class="panel"><h4>Core</h4><ul><li>Three worksheets plus Arena Rounds 1, 3 and 4</li><li>Bronze and silver Code cracker</li></ul></div>
+  <div class="panel"><h4>Stretch</h4><ul><li>Gold Code cracker and the Boss level in class</li><li>Plot average score by subject with <code>.plot(kind="bar")</code></li><li>Add validation: all scores between 0 and 100</li></ul></div>
+</div>
+
+<div class="note warn" style="margin-top:28px"><strong>Safeguarding note:</strong> the data is fictional. If you swap in real class data, anonymise it and avoid tasks that rank or name low-scoring students publicly.</div>
+</div>
+<footer>Data Detective Agency · Teacher guide · Python pandas lesson</footer>
+
+<script>
+(function(){
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const KW=/^(def|return|if|else|elif|for|in|import|as|None|True|False|and|or|not|lambda|print|is)$/;
+function hl(src){const re=/(#[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')|\b(\d+\.?\d*)\b|\b([A-Za-z_]\w*)\b/g;let o="",l=0,m;
+ while((m=re.exec(src))){o+=esc(src.slice(l,m.index));
+  if(m[1])o+='<span class="tk-c">'+esc(m[1])+"</span>";else if(m[2])o+='<span class="tk-s">'+esc(m[2])+"</span>";else if(m[3])o+='<span class="tk-n">'+m[3]+"</span>";else o+=KW.test(m[4])?'<span class="tk-k">'+m[4]+"</span>":esc(m[4]);l=re.lastIndex}
+ return o+esc(src.slice(l))}
+document.querySelectorAll(".code").forEach(box=>{const c=box.querySelector("code"),raw=c.textContent;c.innerHTML=hl(raw);
+ const b=document.createElement("button");b.className="copy";b.type="button";b.textContent="Copy";
+ b.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(raw);b.textContent="Copied"}catch(e){const r=document.createRange();r.selectNodeContents(c);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent="Selected"}setTimeout(()=>b.textContent="Copy",1500)});box.appendChild(b)});
+})();
+</script>
+
+</body>
+</html>
