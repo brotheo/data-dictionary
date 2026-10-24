@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mission Logs and Corrupted Records</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&family=Special+Elite&display=swap">
+<style>
+/* Layout: records desk. Shares the Data Detective tokens. Sticky command bar (views + class timer + rank), single reading column of "mission" sections, evidence board accents. */
+:root{
+  --paper:#eef2f7; --card:#ffffff; --ink:#16233a; --muted:#56667e; --line:#d5deea;
+  --accent:#1f5fd1; --accent-soft:#e3ecfc; --mark:#ffd84a; --onmark:#1d1600;
+  --pin:#cf3e36; --pin-soft:#fbe7e5; --ok:#1b7f53; --ok-soft:#e2f4ea;
+  --codebg:#0f1a2b; --codefg:#e2eaf6; --codemute:#7f93b2; --codestr:#9fe0b0; --codekw:#ffcf5c; --codenum:#ffa38f;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+  --stamp:"Special Elite", "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0d1420; --card:#151f30; --ink:#e5ecf6; --muted:#9aa9c0; --line:#26354d;
+  --accent:#78a6ff; --accent-soft:#1b2a45; --mark:#e9c234; --onmark:#1d1600;
+  --pin:#ff776d; --pin-soft:#3a1f22; --ok:#52c690; --ok-soft:#14302a;
+  --codebg:#090f1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0d1420; --card:#151f30; --ink:#e5ecf6; --muted:#9aa9c0; --line:#26354d;
+  --accent:#78a6ff; --accent-soft:#1b2a45; --mark:#e9c234; --onmark:#1d1600;
+  --pin:#ff776d; --pin-soft:#3a1f22; --ok:#52c690; --ok-soft:#14302a;
+  --codebg:#090f1a; color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{background:var(--paper);color:var(--ink);font:17px/1.6 var(--body)}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+code{font-family:var(--mono);font-size:.88em;background:var(--accent-soft);padding:.08em .35em;border-radius:5px}
+h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
+h2{font-size:clamp(1.6rem,4vw,2.2rem);font-weight:800}
+h3{font-size:1.2rem;font-weight:600;margin-top:1.6rem}
+p{margin:.5rem 0 1rem;max-width:68ch}
+ul,ol{padding-left:1.3rem;max-width:68ch}li{margin:.25rem 0}
+.hl{background:linear-gradient(transparent 58%,var(--mark) 58%);color:inherit;padding:0 .1em}
+
+/* command bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--card);border-bottom:1px solid var(--line);padding-inline:16px}
+.bar-in{max-width:1080px;margin:auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding-block:9px}
+.brand{font-family:var(--stamp);font-size:.95rem;letter-spacing:.04em;color:var(--pin);white-space:nowrap}
+.tabs{display:flex;gap:4px;background:var(--paper);padding:4px;border-radius:999px}
+.tabs a{font-weight:700;text-decoration:none;color:var(--muted);padding:6px 14px;border-radius:999px;font-size:.92rem}
+.tabs a[aria-current="page"]{background:var(--ink);color:var(--card)}
+.timer{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
+.timer select{font:600 .85rem var(--body);border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;padding:5px 6px;max-width:150px}
+.clock{font:600 1.15rem var(--mono);font-variant-numeric:tabular-nums;min-width:4.2ch;text-align:center}
+.clock.done{color:var(--pin);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+.ibtn{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;padding:5px 9px;font:700 .82rem var(--body);cursor:pointer}
+.ibtn:hover{border-color:var(--accent)}
+.rank{display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:700;background:var(--mark);color:var(--onmark);padding:5px 11px;border-radius:999px;white-space:nowrap}
+.rank small{font-family:var(--mono);font-weight:600}
+
+/* layout */
+.wrap{max-width:1080px;margin:auto;padding:28px 16px 70px}
+.view[hidden]{display:none}
+.hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:28px;align-items:end;padding-block:18px 30px;border-bottom:2px dashed var(--line);margin-bottom:28px}
+.casetag{font-family:var(--stamp);color:var(--muted);font-size:.95rem}
+.hero h1{font-size:clamp(2.3rem,7vw,4.2rem);font-weight:800;letter-spacing:-.02em;margin:.3rem 0 .8rem}
+.hero p{font-size:1.1rem}
+.stamp{display:inline-block;font-family:var(--stamp);color:var(--pin);border:3px solid var(--pin);padding:4px 12px;transform:rotate(-4deg);font-size:1.05rem;letter-spacing:.06em;border-radius:4px;opacity:.85}
+.dossier{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px 18px 14px;box-shadow:6px 6px 0 var(--line);position:relative}
+.dossier::before{content:"";position:absolute;top:-9px;left:24px;width:16px;height:16px;border-radius:50%;background:var(--pin);box-shadow:0 2px 0 #0003}
+.dossier dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;font-size:.94rem}
+.dossier dt{color:var(--muted);font-family:var(--mono);font-size:.82rem;padding-top:2px}
+.dossier dd{margin:0;font-weight:700}
+
+/* run sheet */
+.runsheet{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:8px 0 6px}
+.runsheet button{all:unset;cursor:pointer;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.runsheet button:hover,.runsheet button.on{border-color:var(--accent);background:var(--accent-soft)}
+.runsheet b{font-size:.88rem;line-height:1.2}
+.runsheet span{font:600 .8rem var(--mono);color:var(--muted)}
+.runsheet .bar-fill{height:5px;border-radius:3px;background:var(--accent);margin-top:4px}
+.hint-small{font-size:.86rem;color:var(--muted)}
+
+section.mission{padding-block:34px;border-bottom:1px solid var(--line)}
+.eyebrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:8px;font:700 .78rem var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.eyebrow .num{font-family:var(--stamp);font-size:1rem;letter-spacing:.02em;color:var(--pin);text-transform:none}
+.mins{font-family:var(--mono);letter-spacing:0;text-transform:none;background:var(--paper);border:1px solid var(--line);padding:1px 8px;border-radius:999px}
+.lead{font-size:1.08rem}
+
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
+.panel h4{margin:0 0 6px;font:700 1rem var(--body)}
+.note{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0;max-width:72ch}
+.note.warn{border-color:var(--pin);background:var(--pin-soft)}
+.note.good{border-color:var(--ok);background:var(--ok-soft)}
+.teacher{font-size:.92rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;margin-top:14px}
+.teacher b{font-family:var(--stamp);color:var(--ink);font-weight:400}
+
+/* code */
+.code{position:relative;margin:12px 0 18px;min-width:0}
+.code pre{margin:0;overflow-x:auto;background:var(--codebg);color:var(--codefg);padding:18px 18px 16px;border-radius:10px;font:.88rem/1.6 var(--mono);white-space:pre}
+.code pre code{background:none;padding:0;font-size:inherit;color:inherit}
+.code .copy{position:absolute;top:8px;right:8px;border:1px solid #ffffff2e;background:#ffffff14;color:#e2eaf6;border-radius:6px;padding:4px 9px;font:700 .75rem var(--body);cursor:pointer}
+.code .copy:hover{background:#ffffff2a}
+.tk-b{background:var(--mark);color:var(--onmark);border-radius:3px;font-weight:600}
+.ws{background:var(--card);border:2px solid var(--ink);border-radius:12px;padding:16px 18px 6px;margin:22px 0;box-shadow:5px 5px 0 var(--line);min-width:0}
+.ws-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 12px}
+.ws-head h3{margin:0}
+.ws-tag{font-family:var(--stamp);color:var(--pin);font-size:.95rem}
+.tk-c{color:var(--codemute);font-style:italic}.tk-s{color:var(--codestr)}.tk-k{color:var(--codekw)}.tk-n{color:var(--codenum)}
+.out{font:.85rem/1.5 var(--mono);background:var(--paper);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;white-space:pre;overflow-x:auto;margin:-8px 0 16px}
+.out::before{content:"OUTPUT";display:block;font:700 .66rem var(--body);letter-spacing:.14em;color:var(--muted);margin-bottom:4px}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{padding:8px 11px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--paper)}
+tbody tr:last-child td{border-bottom:0}
+tr.fail td{background:var(--pin-soft)}
+td.num,th.num{text-align:right}
+
+/* explorer */
+.explorer{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:14px}
+.controls{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end;margin-bottom:12px}
+.controls label{display:flex;flex-direction:column;gap:3px;font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.04em}
+.controls select,.controls input{font:600 .95rem var(--body);border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--paper);color:var(--ink);min-width:0}
+.livecode{font:.85rem var(--mono);background:var(--codebg);color:var(--codestr);padding:10px 12px;border-radius:8px;overflow-x:auto;white-space:pre;margin-bottom:10px}
+.livecode::before{content:"pandas ▸ ";color:var(--codemute)}
+.count{font-weight:700;font-size:.9rem;margin-bottom:8px}
+
+/* buttons, reveals */
+.btn{font:700 .92rem var(--body);border:0;border-radius:9px;padding:9px 15px;cursor:pointer;background:var(--accent);color:#fff}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.ghost:hover{border-color:var(--accent)}
+.btn.done{background:var(--ok)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;margin:12px 0}
+details>summary{cursor:pointer;padding:11px 16px;font-weight:700;list-style:none}
+details>summary::before{content:"▸ ";color:var(--accent)}
+details[open]>summary::before{content:"▾ "}
+details>.inner{padding:0 16px 14px}
+.tier{display:inline-block;font:700 .7rem var(--body);letter-spacing:.12em;padding:3px 8px;border-radius:999px;margin-bottom:6px}
+.t-b{background:#f1dcc6;color:#6d3f12}.t-s{background:#dde3ec;color:#334257}.t-g{background:#ffe9a3;color:#5b4300}
+.xp{font:600 .78rem var(--mono);color:var(--muted)}
+.complete{margin-top:22px;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+
+/* predictions */
+.predict{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.predict .panel label{display:block;font-weight:700;margin-bottom:8px}
+.predict input,.predict select{width:100%;font:600 1rem var(--body);border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--paper);color:var(--ink)}
+.truth{margin-top:10px;font-size:.93rem;padding:8px 10px;border-radius:8px;background:var(--ok-soft)}
+
+/* quiz + arena cards */
+.q{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0;min-width:0}
+.q .prompt{font-weight:700;margin-bottom:8px}
+.opts{display:grid;gap:6px}
+.opts label{display:flex;gap:9px;align-items:flex-start;padding:7px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--paper)}
+.opts label:hover{border-color:var(--accent)}
+.opts input{margin-top:5px}
+.fb{margin-top:8px;font-size:.93rem;font-weight:700}
+.fb.ok{color:var(--ok)}.fb.no{color:var(--pin)}
+.q.solved{border-color:var(--ok);box-shadow:inset 4px 0 0 var(--ok)}
+.q.flash{animation:flash 1.4s ease 2}
+@keyframes flash{50%{box-shadow:0 0 0 5px var(--mark)}}
+
+/* arena */
+.arena-hero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:start;padding-block:10px 26px;border-bottom:2px dashed var(--line)}
+.board{background:var(--codebg);color:var(--codefg);border-radius:12px;padding:16px;min-width:0}
+.board h3{margin:0 0 10px;color:var(--codekw);font-size:1rem;letter-spacing:.1em;text-transform:uppercase;font-family:var(--body)}
+.team{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto auto;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #ffffff1a}
+.team input{background:transparent;border:0;color:var(--codefg);font:700 .95rem var(--body);min-width:0;width:100%}
+.team .pts{font:600 1.2rem var(--mono);font-variant-numeric:tabular-nums;min-width:3ch;text-align:right;color:var(--codekw)}
+.team button{border:1px solid #ffffff30;background:#ffffff12;color:var(--codefg);border-radius:6px;padding:3px 7px;font:700 .78rem var(--body);cursor:pointer}
+.team.lead .pts::after{content:" ★"}
+.round-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+.answer-in{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.answer-in input{font:600 1rem var(--mono);border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--paper);color:var(--ink);width:12rem;max-width:100%}
+.hintline{font-size:.9rem;color:var(--muted);margin-top:6px}
+.dip{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+
+footer{padding:28px 16px;text-align:center;color:var(--muted);font-size:.85rem;border-top:1px solid var(--line)}
+
+@media (max-width:860px){
+  .hero,.arena-hero{grid-template-columns:1fr}
+  .runsheet{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .grid3,.predict{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr}
+  .timer{margin-left:0}
+}
+@media (max-width:480px){.runsheet{grid-template-columns:repeat(2,minmax(0,1fr))}body{font-size:16px}}
+.btn.warnbtn{background:var(--pin);color:#fff}
+.sim{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:14px;min-width:0}
+.sim-controls{display:grid;gap:10px}
+.sim-add{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.sim-add label{display:flex;flex-direction:column;gap:3px;font-size:.78rem;font-weight:700;color:var(--muted)}
+.sim-add input,.sim-add select{font:600 .95rem var(--body);border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--paper);color:var(--ink);width:8rem;max-width:100%}
+.sim-btns{display:flex;flex-wrap:wrap;gap:8px}
+.sim button:disabled{opacity:.4;cursor:not-allowed}
+.shield{display:flex;gap:10px;align-items:center;background:var(--ok-soft);border:1px solid var(--line);border-radius:10px;padding:9px 12px;cursor:pointer;font-size:.95rem}
+.shield input{width:20px;height:20px;accent-color:var(--ok)}
+.sim-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.sim-pane{border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0;background:var(--paper)}
+.pane-h{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:7px 10px;background:var(--ink);color:var(--card);font:700 .72rem var(--body);letter-spacing:.1em}
+.pane-h small{font-weight:400;letter-spacing:0;opacity:.8}
+.pane-h small code{background:transparent;color:inherit;padding:0}
+.mem{padding:10px;display:flex;flex-wrap:wrap;gap:6px;min-height:120px;align-content:flex-start}
+.chip{background:var(--accent-soft);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.86rem}
+.file{margin:0;padding:10px;min-height:120px;font:.84rem/1.55 var(--mono);white-space:pre;overflow-x:auto;color:var(--ink)}
+.badline{background:var(--pin-soft);color:var(--pin);font-weight:600}
+.empty{color:var(--muted);font-style:italic;font-family:var(--body);font-size:.88rem}
+.console-wrap{position:relative;display:grid;gap:8px}
+.console-wrap .livecode{margin:0}
+.console-wrap .livecode::before{content:"python ▸ "}
+.console{margin:0;font:.86rem/1.5 var(--mono);background:var(--paper);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;white-space:pre-wrap;color:var(--ink);min-height:3.2em}
+.crash{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;background:var(--pin-soft);border:2px solid var(--pin);border-radius:10px;padding:10px 14px;color:var(--pin);animation:shake .4s}
+.crash b{font-family:var(--stamp);font-size:1.15rem;letter-spacing:.06em}
+.crash span{font:.85rem var(--mono);color:var(--ink);flex:1 1 240px;min-width:0;overflow-wrap:anywhere}
+.crash[hidden]{display:none}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.ach{display:flex;flex-wrap:wrap;gap:6px}
+.badge{font:700 .76rem var(--body);border:1px dashed var(--line);border-radius:999px;padding:4px 10px;color:var(--muted)}
+.badge.got{border-style:solid;border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.journey{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0}
+.journey .step{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.journey .step small{font:700 .7rem var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.journey .step code{overflow-wrap:anywhere}
+.journey .arrow{font:700 .8rem var(--mono);color:var(--accent)}
+.inspector{display:grid;gap:6px;margin:12px 0}
+.irow{display:grid;grid-template-columns:2rem minmax(0,1fr) 11rem;gap:6px 10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+.irow .ln{font:600 .8rem var(--mono);color:var(--muted)}
+.irow .iline{background:transparent;padding:0;overflow-wrap:anywhere}
+.irow select{font:600 .9rem var(--body);border:1px solid var(--line);border-radius:7px;padding:6px;background:var(--paper);color:var(--ink);width:100%}
+.irow .iwhy{grid-column:2 / -1;font-size:.86rem}
+.irow .iwhy:empty{display:none}
+.irow.right{border-color:var(--ok);box-shadow:inset 4px 0 0 var(--ok)}.irow.right .iwhy{color:var(--ok)}
+.irow.wrong{border-color:var(--pin);box-shadow:inset 4px 0 0 var(--pin)}.irow.wrong .iwhy{color:var(--pin)}
+.answer-in .fb{margin-top:0}
+#runsheet{grid-template-columns:repeat(9,minmax(0,1fr))}
+@media (max-width:860px){.sim-grid{grid-template-columns:1fr}#runsheet{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:480px){.irow{grid-template-columns:1.6rem minmax(0,1fr)}.irow select{grid-column:1 / -1}#runsheet{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+</style>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-in">
+    <span class="brand">ACADEMY · RECORDS DESK</span>
+    <div class="timer" aria-label="Class timer">
+      <select id="stageSel" aria-label="Lesson stage"></select>
+      <span class="clock" id="clock">05:00</span>
+      <button class="ibtn" id="tPlay" type="button">Start</button>
+      <button class="ibtn" id="tPlus" type="button" title="Add one minute">+1</button>
+      <button class="ibtn" id="tReset" type="button">Reset</button>
+    </div>
+    <div class="rank" title="Your XP"><span id="rankName">Recruit</span><small id="xpVal">0 XP</small></div>
+  </div>
+</div>
+
+<div class="wrap">
+<header class="hero">
+  <div>
+    <div class="casetag">Python · files · try/except · 90 minutes</div>
+    <h1>Mission Logs and Corrupted Records</h1>
+    <p>Every time the Records Desk shuts down, the cadet roster vanishes. Your first job is to make the roster survive a shutdown by saving it to a file and loading it back. Your second job is harder: someone has damaged the records file, and the desk crashes when it reads it. Teach the desk to spot bad records, skip them and keep running.</p>
+    <span class="stamp">CLASSIFIED · CADETS ONLY</span>
+  </div>
+  <aside class="dossier" aria-label="Lesson summary">
+    <dl>
+      <dt>Part A</dt><dd>Mission Logs: save and load a file</dd>
+      <dt>Part B</dt><dd>Corrupted Records: try/except</dd>
+      <dt>Files</dt><dd>roster.txt, mission_log.txt, roster_damaged.txt</dd>
+      <dt>Tools</dt><dd>Google Colab, Jupyter or IDLE</dd>
+      <dt>Ranks</dt><dd>Recruit → Records Chief</dd>
+    </dl>
+  </aside>
+</header>
+
+<h2 style="font-size:1.4rem">Run sheet</h2>
+<p class="hint-small">Tap a stage to load it into the class timer.</p>
+<div class="runsheet" id="runsheet"></div>
+
+<div class="grid2" style="margin-top:22px">
+  <div class="panel"><h4>By the end you can…</h4>
+    <ul><li>open a file with <code>with open()</code> in <code>"r"</code>, <code>"w"</code> or <code>"a"</code> mode</li><li>save a list of dictionaries as lines of text</li><li>load the lines back with <code>strip()</code>, <code>split()</code> and <code>int()</code></li><li>catch errors with <code>try</code> / <code>except</code> so the program keeps running</li></ul></div>
+  <div class="panel"><h4>Key words</h4>
+    <ul><li><b>Persistent data</b>: data that survives after the program stops</li><li><b>File mode</b>: read, write (wipe and replace) or append (add to the end)</li><li><b>Exception</b>: an error Python raises while the program runs</li><li><b>Validation</b>: checking data before you trust it</li></ul></div>
+</div>
+
+<!-- SIMULATOR -->
+<section class="mission" id="desk">
+  <div class="eyebrow"><span class="num">00</span>Warm-up · The power cut <span class="mins">5 min</span></div>
+  <h2>The Records Desk simulator</h2>
+  <p class="lead">This is a model of the desk program. The roster lives in <strong>memory</strong> while the program runs. Files live on the <strong>disk</strong>. Try this first: add a cadet, then press <em>Power cut</em>. What happens to the roster?</p>
+
+  <div class="sim">
+    <div class="sim-controls">
+      <div class="sim-add">
+        <label for="sName">Name<input id="sName" value="Zara" autocomplete="off"></label>
+        <label for="sSquad">Squad<select id="sSquad"><option>Falcon</option><option>Viper</option><option>Orca</option></select></label>
+        <label for="sScore">Score<input id="sScore" value="79" autocomplete="off" style="width:5.5rem"></label>
+        <button class="btn" id="bAdd" type="button">Add cadet</button>
+      </div>
+      <div class="sim-btns">
+        <button class="btn ghost" id="bSave" type="button">Save to file</button>
+        <button class="btn ghost" id="bLoad" type="button">Load from file</button>
+        <button class="btn warnbtn" id="bCut" type="button">⚡ Power cut</button>
+        <button class="btn ghost" id="bDamage" type="button">Damage the file</button>
+        <button class="btn ghost" id="bDelete" type="button">Delete the file</button>
+      </div>
+      <label class="shield" for="sSafe"><input type="checkbox" id="sSafe"> <span><b>Shield on:</b> protect the desk with <code>try</code> / <code>except</code></span></label>
+    </div>
+
+    <div class="sim-grid">
+      <div class="sim-pane"><div class="pane-h"><span>MEMORY</span><small>the <code>roster</code> list</small></div><div id="memView" class="mem"></div></div>
+      <div class="sim-pane"><div class="pane-h"><span>DISK · roster.txt</span><small>rewritten with "w"</small></div><pre id="rosterView" class="file"></pre></div>
+      <div class="sim-pane"><div class="pane-h"><span>DISK · mission_log.txt</span><small>added to with "a"</small></div><pre id="logView" class="file"></pre></div>
+    </div>
+    <div class="console-wrap">
+      <div class="livecode" id="simCode">roster = [ ... 4 cadets ... ]</div>
+      <pre id="simOut" class="console" aria-live="polite">Desk running. 4 cadets in memory. No files saved yet.</pre>
+      <div id="crashBox" class="crash" hidden><b>DESK CRASHED</b><span id="crashMsg"></span><button class="btn" id="bRestart" type="button">Restart the desk</button></div>
+    </div>
+    <div class="ach" id="achList"></div>
+  </div>
+  <p class="teacher"><b>Teacher move:</b> ask "Where did the cadets go?" Variables live in RAM, which is wiped when the program stops. Files are stored on the disk, so they survive. Then challenge him to beat the power cut before Part A explains how.</p>
+</section>
+
+<!-- PART A -->
+<section class="mission" id="a1">
+  <div class="eyebrow"><span class="num">A1</span>Mission Logs · Open a file <span class="mins">10 min</span></div>
+  <h2>Three ways to open a file</h2>
+  <p class="lead"><code>open()</code> needs a filename and a <strong>mode</strong>. The mode decides what you're allowed to do, and one of them can wipe your file.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Mode</th><th>Name</th><th>If the file exists</th><th>If the file doesn't exist</th></tr></thead>
+    <tbody>
+      <tr><td><code>"r"</code></td><td>Read</td><td>Reads it from the start</td><td><code>FileNotFoundError</code> crash</td></tr>
+      <tr class="fail"><td><code>"w"</code></td><td>Write</td><td><b>Wipes it</b>, then writes from empty</td><td>Creates it</td></tr>
+      <tr><td><code>"a"</code></td><td>Append</td><td>Adds to the end and keeps everything</td><td>Creates it</td></tr>
+    </tbody></table></div>
+<div class="code"><pre><code># Write two lines (this creates or WIPES mission_log.txt)
+with open("mission_log.txt", "w") as file:
+    file.write("Desk started\n")
+    file.write("Nova reported for duty\n")
+
+# Add one more line to the end
+with open("mission_log.txt", "a") as file:
+    file.write("Kai reported for duty\n")
+
+# Read the whole file back
+with open("mission_log.txt", "r") as file:
+    print(file.read())</code></pre></div>
+<div class="out">Desk started
+Nova reported for duty
+Kai reported for duty</div>
+  <div class="note"><strong>Why <code>with</code>?</strong> The indented block uses the file, and when the block ends Python closes the file for you, even if an error happens. Without <code>with</code> you must call <code>file.close()</code> yourself, and an unclosed file may not save everything.</div>
+  <div class="note warn"><strong><code>"\n"</code> matters.</strong> <code>write()</code> does not start a new line for you. Forget <code>"\n"</code> and every record lands on one long line.</div>
+  <div id="a1-q"></div>
+</section>
+
+<section class="mission" id="a2">
+  <div class="eyebrow"><span class="num">A2</span>Mission Logs · Save and load the roster <span class="mins">15 min</span></div>
+  <h2>Turn dictionaries into lines, and lines back into dictionaries</h2>
+  <p class="lead">A file only stores text. To save a cadet we turn the dictionary into one line of text with commas between the values. To load, we reverse every step.</p>
+
+  <div class="journey" aria-label="How one record travels">
+    <div class="step"><small>in memory</small><code>{"name": "Nova", "squad": "Falcon", "score": 88}</code></div>
+    <div class="arrow">save: f-string + "\n" →</div>
+    <div class="step"><small>in roster.txt</small><code>Nova,Falcon,88\n</code></div>
+    <div class="arrow">load: strip() → split(",") → int() →</div>
+    <div class="step"><small>back in memory</small><code>{"name": "Nova", "squad": "Falcon", "score": 88}</code></div>
+  </div>
+
+  <h3>The starting roster</h3>
+<div class="code"><pre><code>roster = [
+    {"name": "Nova", "squad": "Falcon", "score": 88},
+    {"name": "Kai",  "squad": "Viper",  "score": 74},
+    {"name": "Mira", "squad": "Falcon", "score": 91},
+    {"name": "Jett", "squad": "Orca",   "score": 65},
+]</code></pre></div>
+
+  <h3>Save: one line per cadet</h3>
+<div class="code"><pre><code>def save_roster(roster, filename):
+    with open(filename, "w") as file:
+        for cadet in roster:
+            file.write(f"{cadet['name']},{cadet['squad']},{cadet['score']}\n")
+
+save_roster(roster, "roster.txt")</code></pre></div>
+<div class="out">roster.txt now contains:
+Nova,Falcon,88
+Kai,Viper,74
+Mira,Falcon,91
+Jett,Orca,65</div>
+
+  <h3>Load: reverse every step</h3>
+<div class="code"><pre><code>def load_roster(filename):
+    roster = []
+    with open(filename, "r") as file:
+        for line in file:
+            line = line.strip()            # "Nova,Falcon,88\n" -> "Nova,Falcon,88"
+            parts = line.split(",")        # -> ["Nova", "Falcon", "88"]
+            cadet = {"name": parts[0],
+                     "squad": parts[1],
+                     "score": int(parts[2])}   # "88" -> 88
+            roster.append(cadet)
+    return roster
+
+roster = load_roster("roster.txt")
+print(roster[0])</code></pre></div>
+<div class="out">{'name': 'Nova', 'squad': 'Falcon', 'score': 88}</div>
+  <div class="note"><strong>Why <code>int()</code>?</strong> Everything read from a file is a string. Without <code>int()</code>, <code>"88" + 1</code> crashes and <code>"9" &gt; "10"</code> is <code>True</code>.</div>
+  <p><strong>Back to the simulator:</strong> add a cadet, <em>Save</em>, <em>Power cut</em>, then <em>Load</em>. The roster survives.</p>
+  <div id="a2-q"></div>
+</section>
+
+<section class="mission" id="a3">
+  <div class="eyebrow"><span class="num">A3</span>Mission Logs · Keep a log <span class="mins">10 min</span></div>
+  <h2>A log that only grows</h2>
+  <p class="lead">The roster is <em>rewritten</em> every save, so it uses <code>"w"</code>. A mission log keeps every event forever, so it uses <code>"a"</code>.</p>
+<div class="code"><pre><code>def log_event(message):
+    with open("mission_log.txt", "a") as file:
+        file.write(message + "\n")
+
+log_event("Desk started")
+log_event("Roster loaded")
+log_event("Zara added to Falcon")</code></pre></div>
+
+  <div class="ws" id="wsA">
+    <div class="ws-head"><h3>Worksheet A · Mission Logs</h3><span class="ws-tag">CORE TASK · 8 min</span></div>
+    <p>Replace every yellow blank and run the cell once. Then open mission_log.txt (in Colab, the folder icon on the left) and check the new line is at the end.</p>
+<div class="code"><pre><code># ============================================================
+# WORKSHEET A: MISSION LOGS
+# ============================================================
+
+def save_roster(roster, filename):
+    with open(filename, ______) as file:
+        for cadet in roster:
+            file.write(______________________________)
+
+
+def load_roster(filename):
+    roster = []
+    with open(filename, ______) as file:
+        for line in file:
+            line = ______________________________
+            parts = ______________________________
+            cadet = {"name": parts[0], "squad": parts[1], "score": ______________________________}
+            roster.append(cadet)
+    return roster
+
+
+def log_event(message):
+    with open("mission_log.txt", ______) as file:
+        file.write(______________________________)
+
+
+# Test: add a cadet, save, then load into a NEW variable
+roster.append({"name": "Zara", "squad": "Falcon", "score": 79})
+save_roster(roster, "roster.txt")
+log_event("Zara added and roster saved")
+
+reloaded = load_roster("roster.txt")
+print("Cadets after reload:", len(reloaded))
+print("Last cadet:", reloaded[-1])</code></pre></div>
+<div class="out">Cadets after reload: 5
+Last cadet: {'name': 'Zara', 'squad': 'Falcon', 'score': 79}</div>
+    <details class="hint-gate" data-for="wsA"><summary>Stuck? Show the pieces</summary><div class="inner">
+      <p><code>"w"</code> · <code>"r"</code> · <code>"a"</code> · <code>line.strip()</code> · <code>line.split(",")</code> · <code>int(parts[2])</code> · <code>message + "\n"</code> · <code>f"{cadet['name']},{cadet['squad']},{cadet['score']}\n"</code></p>
+    </div></details>
+    <div class="answer-in" id="wsA-check"><label for="in-wsA" class="hint-small" style="font-weight:700">How many cadets after reload?</label><input id="in-wsA" autocomplete="off" placeholder="Number"><button class="btn ghost" type="button">Check</button><span class="fb" aria-live="polite"></span></div>
+    <p class="hint-small">Run it a second time and the answer becomes 6. Can you explain why? (Zara is appended to the list in memory again.)</p>
+  </div>
+</section>
+
+<!-- PART B -->
+<section class="mission" id="b1">
+  <div class="eyebrow"><span class="num">B1</span>Corrupted Records · Crash gallery <span class="mins">8 min</span></div>
+  <h2>Name the crash before it happens</h2>
+  <p class="lead">When Python can't do something it <strong>raises an exception</strong>. If nothing catches it, the program stops with a red traceback. These are the three you'll meet at the Records Desk.</p>
+  <div class="grid3">
+    <div class="panel"><span class="tier t-g">FileNotFoundError</span><p>Opening a file in <code>"r"</code> mode that doesn't exist.</p></div>
+    <div class="panel"><span class="tier t-s">ValueError</span><p>Right type, wrong value: <code>int("seventy-four")</code>.</p></div>
+    <div class="panel"><span class="tier t-b">IndexError</span><p>Asking for a position that isn't there: <code>parts[2]</code> when there are only 2 parts.</p></div>
+  </div>
+  <p>Try them in the simulator: with the shield <b>off</b>, delete the file and press <em>Load</em>, or type <code>seventy</code> as a score.</p>
+  <div id="b1-q"></div>
+</section>
+
+<section class="mission" id="b2">
+  <div class="eyebrow"><span class="num">B2</span>Corrupted Records · try / except <span class="mins">12 min</span></div>
+  <h2>Catch the error and keep the desk running</h2>
+  <p class="lead">Put risky code in a <code>try</code> block. If it raises the error named in <code>except</code>, Python jumps there instead of crashing.</p>
+<div class="code"><pre><code># 1. A missing file: start with an empty roster instead of crashing
+try:
+    roster = load_roster("roster.txt")
+except FileNotFoundError:
+    print("No saved roster yet. Starting fresh.")
+    roster = []
+
+# 2. Bad typing: ask again instead of crashing
+while True:
+    try:
+        score = int(input("Score: "))
+        break                      # only reached if int() worked
+    except ValueError:
+        print("Score must be a whole number, like 79.")</code></pre></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Part</th><th>Runs when…</th></tr></thead>
+    <tbody>
+      <tr><td><code>try:</code></td><td>Always: the risky code</td></tr>
+      <tr><td><code>except ValueError:</code></td><td>Only if that error happened in <code>try</code></td></tr>
+      <tr><td><code>except (IndexError, ValueError) as error:</code></td><td>Either error; <code>error</code> holds the details</td></tr>
+      <tr><td><code>else:</code></td><td>Only if <code>try</code> had no error</td></tr>
+      <tr><td><code>finally:</code></td><td>Always, error or not (good for "Desk closed" messages)</td></tr>
+    </tbody></table></div>
+  <div class="note warn"><strong>Name the error.</strong> A bare <code>except:</code> catches everything, including your own typos, so real bugs disappear silently. Always say which errors you expect.</div>
+
+  <h3>Make the damaged file</h3>
+  <p>Run this cell to create the evidence for the rest of the lesson.</p>
+<div class="code"><pre><code>damaged_text = """Nova,Falcon,88
+Kai,Viper,seventy-four
+Mira,Falcon,91
+Jett,Orca
+Rex,Viper, 82
+Luna,Falcon,9.5
+
+Ash;Orca;70
+"""
+
+with open("roster_damaged.txt", "w") as file:
+    file.write(damaged_text)</code></pre></div>
+
+  <h3>Records inspector</h3>
+  <p>For each line, decide what happens when this code runs. Blank lines are skipped first with <code>if line == "": continue</code>.</p>
+<div class="code"><pre><code>line = line.strip()
+if line == "":
+    continue
+parts = line.split(",")
+cadet = {"name": parts[0], "squad": parts[1], "score": int(parts[2])}</code></pre></div>
+  <div class="inspector" id="inspector"></div>
+  <div class="row"><button class="btn" id="inspCheck" type="button">Check my verdicts</button><span id="inspScore" class="fb" aria-live="polite"></span></div>
+</section>
+
+<section class="mission" id="b3">
+  <div class="eyebrow"><span class="num">B3</span>Corrupted Records · The unbreakable loader <span class="mins">15 min</span></div>
+  <h2>Skip bad lines, report them, keep the good ones</h2>
+  <p class="lead">The <code>try</code> goes <em>inside</em> the loop, so one damaged line is skipped and the loop carries on. A second <code>try</code> around everything handles a missing file.</p>
+  <div class="ws" id="wsB">
+    <div class="ws-head"><h3>Worksheet B · Corrupted Records</h3><span class="ws-tag">CORE TASK · 12 min</span></div>
+<div class="code"><pre><code># ============================================================
+# WORKSHEET B: THE UNBREAKABLE LOADER
+# ============================================================
+
+def load_roster(filename):
+    roster = []
+    damaged = 0
+    ______:
+        with open(filename, "r") as file:
+            line_number = 0
+            for line in file:
+                line_number += 1
+                line = line.strip()
+                if line == "":
+                    ______
+
+                ______:
+                    parts = line.split(",")
+                    cadet = {"name": parts[0], "squad": parts[1], "score": int(parts[2])}
+                    roster.append(cadet)
+                except (______________________________) as error:
+                    damaged += 1
+                    print("Line", line_number, "damaged:", line, "->", type(error).__name__)
+
+    except ______________________________:
+        print("No file called", filename, "- starting with an empty roster.")
+
+    print("Loaded", len(roster), "cadets,", damaged, "damaged lines skipped.")
+    return roster
+
+
+# Test 1: the damaged file
+good = load_roster("roster_damaged.txt")
+print([cadet["name"] for cadet in good])
+
+# Test 2: a file that doesn't exist
+nothing = load_roster("ghost.txt")</code></pre></div>
+<div class="out">Line 2 damaged: Kai,Viper,seventy-four -> ValueError
+Line 4 damaged: Jett,Orca -> IndexError
+Line 6 damaged: Luna,Falcon,9.5 -> ValueError
+Line 8 damaged: Ash;Orca;70 -> IndexError
+Loaded 3 cadets, 4 damaged lines skipped.
+['Nova', 'Mira', 'Rex']
+No file called ghost.txt - starting with an empty roster.
+Loaded 0 cadets, 0 damaged lines skipped.</div>
+    <details class="hint-gate" data-for="wsB"><summary>Stuck? Show the pieces</summary><div class="inner">
+      <p><code>try</code> (twice) · <code>continue</code> · <code>IndexError, ValueError</code> · <code>FileNotFoundError</code></p>
+    </div></details>
+    <div class="answer-in" id="wsB-check"><label for="in-wsB" class="hint-small" style="font-weight:700">How many cadets did Test 1 load?</label><input id="in-wsB" autocomplete="off" placeholder="Number"><button class="btn ghost" type="button">Check</button><span class="fb" aria-live="polite"></span></div>
+  </div>
+  <p class="teacher"><b>Discussion:</b> Ash's line and Rex's line both "look" fine to a human. Why does Python reject one and accept the other? (Semicolons aren't commas, so <code>split(",")</code> gives one part. <code>int(" 82")</code> ignores spaces.) Should the desk also reject a blank squad, like <code>Pip,,70</code>? That needs your own check, because Python won't raise an error.</p>
+</section>
+
+<!-- CHALLENGES -->
+<section class="mission" id="c">
+  <div class="eyebrow"><span class="num">C</span>Debug the desk <span class="mins">10 min</span></div>
+  <h2>Five broken desks. Find the fault.</h2>
+  <p>Each one runs, but something is wrong. Lock in an answer, then test it in your notebook.</p>
+  <div id="c-q"></div>
+  <h3>Code cracker</h3>
+  <div class="grid3" id="c-typed"></div>
+</section>
+
+<!-- EXIT -->
+<section class="mission" id="exit">
+  <div class="eyebrow"><span class="num">X</span>Exit ticket <span class="mins">5 min</span></div>
+  <h2>Close the records</h2>
+  <form id="quiz"></form>
+  <div class="row"><button class="btn" form="quiz" type="submit">Check answers</button><button class="btn ghost" id="quizReset" type="button">Try again</button><span id="quizScore" class="fb" aria-live="polite"></span></div>
+</section>
+
+<!-- BOSS -->
+<section class="mission" id="boss" style="border-bottom:0">
+  <div class="eyebrow"><span class="num">★</span>Boss level · homework</div>
+  <h2>Build the real Records Desk</h2>
+  <p class="lead">Put it all together: a menu program that loads on start, survives bad typing and bad files, logs every action and saves before it quits.</p>
+  <div class="ws" id="wsBoss">
+    <div class="ws-head"><h3>Worksheet C · The Records Desk</h3><span class="ws-tag">BOSS</span></div>
+<div class="code"><pre><code># ============================================================
+# BOSS LEVEL: THE RECORDS DESK
+# Paste your save_roster, load_roster (Worksheet B) and log_event above this.
+# ============================================================
+
+FILENAME = "roster.txt"
+roster = ______________________________
+log_event("Desk started")
+
+while True:
+    print("\n=== ACADEMY RECORDS DESK ===")
+    print("1. Show roster   2. Add cadet   3. Save   4. Save and quit")
+    choice = input("Choose 1-4: ")
+
+    if choice == "1":
+        for cadet in roster:
+            print(cadet["name"], "|", cadet["squad"], "|", cadet["score"])
+
+    elif choice == "2":
+        name = input("Name: ")
+        squad = input("Squad: ")
+        ______:
+            score = ______________________________
+        except ______________________________:
+            print("Score must be a whole number. Cadet not added.")
+        else:
+            roster.append({"name": name, "squad": squad, "score": score})
+            log_event(______________________________)
+            print(name, "added.")
+
+    elif choice == "3":
+        ______________________________
+        log_event("Roster saved")
+
+    elif choice == "4":
+        save_roster(roster, FILENAME)
+        log_event("Desk closed")
+        print("Roster saved. Goodbye, Commander.")
+        ______
+
+    else:
+        print("Unknown option. Type 1, 2, 3 or 4.")</code></pre></div>
+    <details class="hint-gate" data-for="wsBoss"><summary>Stuck? Show the pieces</summary><div class="inner">
+      <p><code>load_roster(FILENAME)</code> · <code>try</code> · <code>int(input("Score: "))</code> · <code>ValueError</code> · <code>"Added " + name</code> · <code>save_roster(roster, FILENAME)</code> · <code>break</code></p>
+    </div></details>
+    <div class="panel"><h4>Test plan: does your desk pass all five?</h4><ol style="margin:0">
+      <li>Delete roster.txt, start the desk: it starts empty and doesn't crash.</li>
+      <li>Add a cadet with score <code>abc</code>: friendly message, no crash.</li>
+      <li>Add two real cadets, choose 4, then run the program again: both are still there.</li>
+      <li>Type <code>7</code> at the menu: "Unknown option".</li>
+      <li>Open mission_log.txt: every action is listed, oldest first.</li></ol></div>
+    <h4 style="margin-top:16px">Stretch goals</h4>
+    <ul><li>Option 5: show the top cadet (highest score).</li><li>Reject a blank name or a score outside 0–100 with your own check.</li><li>Add <code>finally:</code> so "Desk closed" is logged even if the program crashes.</li></ul>
+  </div>
+  <div class="row"><button class="btn ghost" id="resetAll" type="button">Reset my XP and answers</button><span id="resetMsg" class="hint-small" aria-live="polite"></span></div>
+</section>
+</div>
+
+<footer>Academy Records Desk · Python files and exceptions · all cadets are fictional</footer>
+
+<script>
+(function(){
+"use strict";
+const KEY="records-desk-v1";
+let S;try{S=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){S={}}
+S.xp=S.xp||{};
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const $=id=>document.getElementById(id);
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* XP */
+const RANKS=[[0,"Recruit"],[150,"Cadet"],[350,"Agent"],[600,"Senior Agent"],[750,"Records Chief"]];
+function totalXP(){return Object.values(S.xp).reduce((a,b)=>a+b,0)}
+function award(id,pts){if(S.xp[id])return false;S.xp[id]=pts;save();renderRank();return true}
+function renderRank(){const x=totalXP();let r=RANKS[0][1];RANKS.forEach(([t,n])=>{if(x>=t)r=n});$("rankName").textContent=r;$("xpVal").textContent=x+" XP"}
+
+/* code highlight + copy */
+const KW=/^(def|return|if|else|elif|for|in|import|as|None|True|False|and|or|not|print|is|with|open|try|except|finally|while|break|continue|pass)$/;
+function hlPy(src){
+  const re=/(#[^\n]*)|("""[\s\S]*?"""|f?"(?:[^"\\\n]|\\.)*"|f?'(?:[^'\\\n]|\\.)*')|(_{4,})|\b(\d+\.?\d*)\b|\b([A-Za-z_]\w*)\b/g;
+  let out="",last=0,m;
+  while((m=re.exec(src))){out+=esc(src.slice(last,m.index));
+    if(m[1])out+='<span class="tk-c">'+esc(m[1])+"</span>";
+    else if(m[2])out+='<span class="tk-s">'+esc(m[2])+"</span>";
+    else if(m[3])out+='<span class="tk-b">'+m[3]+"</span>";
+    else if(m[4])out+='<span class="tk-n">'+m[4]+"</span>";
+    else out+=KW.test(m[5])?'<span class="tk-k">'+m[5]+"</span>":esc(m[5]);
+    last=re.lastIndex}
+  return out+esc(src.slice(last));
+}
+function prepCode(root){root.querySelectorAll(".code").forEach(box=>{if(box.dataset.ready)return;box.dataset.ready=1;
+  const code=box.querySelector("code"),raw=code.textContent;code.innerHTML=hlPy(raw);
+  const b=document.createElement("button");b.className="copy";b.type="button";b.textContent="Copy";
+  b.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(raw);b.textContent="Copied"}catch(e){const r=document.createRange();r.selectNodeContents(code);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent="Selected, press Ctrl+C"}setTimeout(()=>b.textContent="Copy",1600)});
+  box.appendChild(b)})}
+
+/* timer */
+const STAGES=[["Power cut",5,"desk"],["Open a file",10,"a1"],["Save & load",15,"a2"],["Mission log",10,"a3"],["Crash gallery",8,"b1"],["try / except",12,"b2"],["Unbreakable loader",15,"b3"],["Debug the desk",10,"c"],["Exit ticket",5,"exit"]];
+let stage=0,left=STAGES[0][1]*60,tick=null;const sel=$("stageSel");
+STAGES.forEach((s,i)=>{const o=document.createElement("option");o.value=i;o.textContent=s[0]+" · "+s[1]+"m";sel.appendChild(o)});
+const fmt=t=>(t<0?"-":"")+String(Math.floor(Math.abs(t)/60)).padStart(2,"0")+":"+String(Math.abs(t)%60).padStart(2,"0");
+function drawClock(){$("clock").textContent=fmt(left);$("clock").classList.toggle("done",left<=0);document.querySelectorAll(".runsheet button").forEach(b=>b.classList.toggle("on",+b.dataset.i===stage))}
+function stop(){clearInterval(tick);tick=null;$("tPlay").textContent="Start"}
+function setStage(i){stop();stage=i;sel.value=i;left=STAGES[i][1]*60;drawClock()}
+$("tPlay").addEventListener("click",()=>{if(tick){stop();return}$("tPlay").textContent="Pause";tick=setInterval(()=>{left--;drawClock()},1000)});
+$("tPlus").addEventListener("click",()=>{left+=60;drawClock()});
+$("tReset").addEventListener("click",()=>setStage(stage));
+sel.addEventListener("change",()=>setStage(+sel.value));
+STAGES.forEach((s,i)=>{const b=document.createElement("button");b.type="button";b.dataset.i=i;b.innerHTML="<b>"+s[0]+"</b><span>"+s[1]+" min</span><div class=\"bar-fill\" style=\"width:"+Math.round(s[1]/15*100)+"%\"></div>";b.addEventListener("click",()=>{setStage(i);document.getElementById(s[2]).scrollIntoView()});$("runsheet").appendChild(b)});
+drawClock();
+
+/* ---------- SIMULATOR ---------- */
+const START=[{name:"Nova",squad:"Falcon",score:88},{name:"Kai",squad:"Viper",score:74},{name:"Mira",squad:"Falcon",score:91},{name:"Jett",squad:"Orca",score:65}];
+let mem=START.map(c=>({...c})),rosterFile=null,logFile=null,crashed=false,damageN=0;
+const DAMAGE=["Kai,Viper,seventy-four","Jett,Orca","Luna,Falcon,9.5","Ash;Orca;70",""];
+const ACH=[["ach-survive","Beat the power cut: save, cut, load",50],["ach-crash","Crash the desk on purpose",20],["ach-shield","Load a damaged file with the shield on",50],["ach-badtype","Survive a bad score with the shield on",30]];
+const pyInt=s=>/^\s*[+-]?\d+\s*$/.test(s)?parseInt(s,10):null;
+let cutSinceSave=false;
+function log(msg){logFile=(logFile||"")+msg+"\n"}
+function out(t){$("simOut").textContent=t}
+function code(t){$("simCode").textContent=t}
+function crash(tb){crashed=true;mem=[];$("crashMsg").textContent=tb;$("crashBox").hidden=false;out("Traceback (most recent call last):\n  ...\n"+tb);award("ach-crash",20);draw()}
+function draw(){
+  $("memView").innerHTML=mem.length?mem.map(c=>'<span class="chip"><b>'+esc(c.name)+'</b> '+esc(c.squad)+' · '+c.score+'</span>').join(""):'<span class="empty">[ ]  empty list</span>';
+  if(rosterFile===null)$("rosterView").innerHTML='<span class="empty">(file does not exist)</span>';
+  else{const lines=rosterFile.split("\n");if(lines[lines.length-1]==="")lines.pop();
+    $("rosterView").innerHTML=lines.length?lines.map(l=>{const p=l.trim().split(",");const bad=l.trim()===""||p.length<3||pyInt(p[2])===null;return'<span class="'+(bad?"badline":"")+'">'+(esc(l)||"&nbsp;")+"</span>"}).join("\n"):'<span class="empty">(empty file)</span>'}
+  $("logView").innerHTML=logFile===null?'<span class="empty">(file does not exist)</span>':esc(logFile.trimEnd());
+  document.querySelectorAll(".sim button:not(#bRestart), .sim input, .sim select").forEach(el=>{if(el.id!=="sSafe")el.disabled=crashed});
+  $("achList").innerHTML=ACH.map(([id,t,p])=>'<span class="badge'+(S.xp[id]?" got":"")+'">'+(S.xp[id]?"✓ ":"")+t+" · "+p+" XP</span>").join("");
+}
+const safe=()=>$("sSafe").checked;
+$("bAdd").addEventListener("click",()=>{
+  const name=$("sName").value.trim()||"Cadet",squad=$("sSquad").value,raw=$("sScore").value;
+  const n=pyInt(raw);
+  if(n===null){
+    if(safe()){code('try:\n    score = int(input("Score: "))\nexcept ValueError:\n    print("Score must be a whole number. Cadet not added.")');out("Score must be a whole number. Cadet not added.");award("ach-badtype",30);draw();return}
+    code('score = int(input("Score: "))   # no try/except!');crash("ValueError: invalid literal for int() with base 10: '"+raw+"'");return}
+  mem.push({name,squad,score:n});code('roster.append({"name": "'+name+'", "squad": "'+squad+'", "score": '+n+'})');out(name+" added. "+mem.length+" cadets in memory. Not saved yet.");
+  const pool=["Orion","Pip","Juno","Rook","Sage","Ivy","Blaze","Quill"];$("sName").value=pool[Math.floor(Math.random()*pool.length)];$("sScore").value=String(50+Math.floor(Math.random()*50));
+  draw()});
+$("bSave").addEventListener("click",()=>{
+  rosterFile=mem.map(c=>c.name+","+c.squad+","+c.score+"\n").join("");log("Roster saved ("+mem.length+" cadets)");cutSinceSave=false;
+  code('save_roster(roster, "roster.txt")      # mode "w": wipe, then write\nlog_event("Roster saved")             # mode "a": add to the end');
+  out("Saved "+mem.length+" cadets to roster.txt. The old contents were replaced.");draw()});
+$("bCut").addEventListener("click",()=>{mem=[];cutSinceSave=true;code("# ⚡ The program stopped. Every variable is gone.\nroster = ???");out("Power restored. Memory is empty: the roster list is gone. Files on the disk are untouched.");draw()});
+$("bLoad").addEventListener("click",()=>{
+  if(rosterFile===null){
+    if(safe()){code('try:\n    roster = load_roster("roster.txt")\nexcept FileNotFoundError:\n    roster = []');mem=[];log("No roster file found: started empty");out("No file called roster.txt - starting with an empty roster.");draw();return}
+    code('roster = load_roster("roster.txt")   # no try/except!');crash("FileNotFoundError: [Errno 2] No such file or directory: 'roster.txt'");return}
+  const lines=rosterFile.split("\n");if(lines[lines.length-1]==="")lines.pop();
+  const loaded=[],msgs=[];let skipped=0;
+  for(let i=0;i<lines.length;i++){const line=lines[i].trim();
+    if(line===""){if(safe())continue;code('load_roster("roster.txt")   # no try/except!');crash("IndexError: list index out of range   (line "+(i+1)+" is blank)");return}
+    const p=line.split(",");let err=null;
+    if(p.length<2||p.length<3)err="IndexError: list index out of range";
+    else if(pyInt(p[2])===null)err="ValueError: invalid literal for int() with base 10: '"+p[2]+"'";
+    if(err){if(safe()){skipped++;msgs.push("Line "+(i+1)+" damaged: "+line+" -> "+err.split(":")[0]);continue}
+      code('load_roster("roster.txt")   # no try/except!');crash(err+"   (line "+(i+1)+": "+line+")");return}
+    loaded.push({name:p[0],squad:p[1],score:pyInt(p[2])})}
+  mem=loaded;log("Roster loaded ("+loaded.length+" cadets"+(skipped?", "+skipped+" damaged":"")+")");
+  code(safe()?'roster = load_roster("roster.txt")   # Worksheet B version, with try/except':'roster = load_roster("roster.txt")');
+  out((msgs.length?msgs.join("\n")+"\n":"")+"Loaded "+loaded.length+" cadets"+(safe()?", "+skipped+" damaged lines skipped.":"."));
+  if(cutSinceSave&&loaded.length)award("ach-survive",50);
+  if(safe()&&skipped)award("ach-shield",50);
+  cutSinceSave=false;draw()});
+$("bDamage").addEventListener("click",()=>{
+  if(rosterFile===null){out("There's no roster.txt to damage. Save first.");return}
+  const bad=DAMAGE[damageN%DAMAGE.length];damageN++;rosterFile+=bad+"\n";
+  code("# Someone opened roster.txt in Notepad and typed:\n"+(bad===""?"# (a blank line)":bad));out("roster.txt now has a damaged line (shown in red). Try loading it with the shield off, then on.");draw()});
+$("bDelete").addEventListener("click",()=>{rosterFile=null;code('import os\nos.remove("roster.txt")');out("roster.txt deleted. What happens if you load now?");draw()});
+$("bRestart").addEventListener("click",()=>{crashed=false;mem=[];$("crashBox").hidden=true;code("# Program restarted. Memory starts empty.\nroster = []");out("Desk restarted with an empty roster. Turn the shield on to stop that crash happening again.");draw()});
+draw();
+
+/* ---------- MC cards ---------- */
+function mcCard(q,pts,withCode){
+  const d=document.createElement("div");d.className="q";d.id=q.id;
+  d.innerHTML='<div class="prompt">'+q.prompt+"</div>"+(withCode&&q.code?'<div class="code"><pre><code>'+esc(q.code)+"</code></pre></div>":"")+
+   '<div class="opts">'+q.opts.map((o,i)=>'<label><input type="radio" name="'+q.id+'" value="'+i+'"><span>'+o+"</span></label>").join("")+"</div>"+
+   '<div class="row" style="margin-bottom:0"><button class="btn ghost" type="button">Lock in · '+pts+' XP</button><span class="fb" aria-live="polite"></span></div>';
+  const fb=d.querySelector(".fb");
+  d.querySelector("button").addEventListener("click",()=>{const c=d.querySelector("input:checked");if(!c){fb.className="fb no";fb.textContent="Choose an answer first.";return}
+    if(+c.value===q.a){fb.className="fb ok";fb.innerHTML="Correct. "+q.why;d.classList.add("solved");award(q.id,pts)}else{fb.className="fb no";fb.innerHTML="Not this one. "+(q.miss||"Try again.")}});
+  if(S.xp[q.id]){d.classList.add("solved");d.querySelector('input[value="'+q.a+'"]').checked=true;fb.className="fb ok";fb.innerHTML="Solved. "+q.why}
+  return d}
+const QA1=[{id:"qa1",prompt:"roster.txt holds 4 cadets. What does it hold after this runs?",code:'with open("roster.txt", "w") as file:\n    file.write("Zara,Falcon,79\\n")',opts:["5 cadets: Zara is added at the end","Only Zara","4 cadets: nothing changes","It crashes because the file exists"],a:1,why:'"w" wipes the file first. To add to the end you need "a".'}];
+const QA2=[{id:"qa2",prompt:"A line in roster.txt is <code>Kai,Viper,74</code>. What is <code>parts</code> after <code>parts = line.strip().split(\",\")</code>?",opts:['<code>["Kai,Viper,74"]</code>','<code>["Kai", "Viper", "74"]</code>','<code>["Kai", "Viper", 74]</code>','<code>{"name": "Kai", ...}</code>'],a:1,why:'split(",") cuts at each comma. The score is still a string until you use int().'}];
+const QB1=[
+ {id:"qb1a",prompt:"Which error?",code:'with open("ghost.txt", "r") as file:\n    print(file.read())',opts:["FileNotFoundError","ValueError","IndexError","No error: it prints nothing"],a:0,why:'"r" mode needs the file to exist already.'},
+ {id:"qb1b",prompt:"Which error?",code:'score = int("seventy-four")',opts:["FileNotFoundError","ValueError","IndexError","No error: score is 74"],a:1,why:"It's a string, so the type is fine, but its value can't become a whole number."},
+ {id:"qb1c",prompt:"Which error?",code:'parts = "Jett,Orca".split(",")\nprint(parts[2])',opts:["FileNotFoundError","ValueError","IndexError","It prints an empty string"],a:2,why:"parts has positions 0 and 1 only."},
+ {id:"qb1d",prompt:"Trick question. What happens?",code:'print(int(" 82"))',opts:["ValueError because of the space","82","IndexError"," 82 with the space"],a:1,why:"int() ignores spaces and newlines at the start and end. Spaces inside the number still fail."}
+];
+const QC=[
+ {id:"qc1",prompt:"Desk 1 saves like this. What goes wrong when the desk loads the file?",code:'for cadet in roster:\n    file.write(f"{cadet[\'name\']},{cadet[\'squad\']},{cadet[\'score\']}")',opts:["Nothing: it works","Every cadet lands on one line, so loading crashes with ValueError: '88Kai'","Only the last cadet is saved","FileNotFoundError"],a:1,why:'Without "\\n" the file is Nova,Falcon,88Kai,Viper,74... and int("88Kai") fails.'},
+ {id:"qc2",prompt:"Desk 2 logs three events. What's in mission_log.txt afterwards?",code:'def log_event(message):\n    with open("mission_log.txt", "w") as file:\n        file.write(message + "\\n")\n\nlog_event("A")\nlog_event("B")\nlog_event("C")',opts:["A, B and C","Only C","Only A","Nothing"],a:1,why:'Each call opens in "w" mode, which wipes the earlier entries. Logs need "a".'},
+ {id:"qc3",prompt:"Desk 3 puts one try around the <em>whole</em> loop. How many cadets load from roster_damaged.txt?",code:'try:\n    with open("roster_damaged.txt") as file:\n        for line in file:\n            parts = line.strip().split(",")\n            roster.append({"name": parts[0], "squad": parts[1], "score": int(parts[2])})\nexcept (IndexError, ValueError):\n    print("Damaged file!")',opts:["3","1","0","8"],a:1,why:"Nova loads, then line 2 jumps straight to except and the loop is abandoned. That's why the try goes inside the loop."},
+ {id:"qc4",prompt:"Desk 4 uses <code>except:</code> with no error name. Why is that risky?",code:'try:\n    score = int(input("Score: "))\n    roster.apend(score)\nexcept:\n    print("Please type a number")',opts:["It isn't risky","It also hides real bugs: the typo apend (not append) prints \"Please type a number\" every time","It makes the program slower","except must always come before try"],a:1,why:"The AttributeError from the typo is swallowed, so you'd never find the bug. Name the errors you expect."},
+ {id:"qc5",prompt:"Desk 5. What is printed?",code:'try:\n    score = int("88")\nexcept ValueError:\n    print("bad score")\nelse:\n    print("score ok")\nfinally:\n    print("desk checked")',opts:["bad score, desk checked","score ok, desk checked","score ok","desk checked"],a:1,why:"No error, so except is skipped and else runs. finally always runs."}
+];
+QA1.forEach(q=>$("a1-q").appendChild(mcCard(q,20,true)));
+QA2.forEach(q=>$("a2-q").appendChild(mcCard(q,20,false)));
+QB1.forEach(q=>$("b1-q").appendChild(mcCard(q,20,true)));
+QC.forEach(q=>$("c-q").appendChild(mcCard(q,30,true)));
+
+/* typed */
+function typed(box,id,ans,pts,okMsg,extra){
+  const inp=box.querySelector("input"),fb=box.querySelector(".fb");
+  const check=()=>{const v=inp.value.trim().toLowerCase();if(!v){fb.className="fb no";fb.textContent="Type an answer first.";return}
+    const ok=Array.isArray(ans)?ans.includes(v):Number(v)===ans;
+    if(ok){fb.className="fb ok";fb.textContent=okMsg;box.classList.add("solved");award(id,pts)}else{fb.className="fb no";fb.textContent=(extra&&extra(v))||"Not yet. Rerun your code and read the output carefully."}};
+  box.querySelector("button").addEventListener("click",check);inp.addEventListener("keydown",e=>{if(e.key==="Enter")check()});
+  if(S.xp[id]){box.classList.add("solved");inp.value=Array.isArray(ans)?ans[0]:ans;fb.className="fb ok";fb.textContent="Solved."}}
+typed($("wsA-check"),"wsA",5,60,"Correct: 4 cadets + Zara, and Zara came back from the file.",v=>v==="6"?"6 means the cell ran twice, so Zara is in the list twice. Restart, run the roster cell, then run Worksheet A once.":null);
+typed($("wsB-check"),"wsB",3,80,"Correct: Nova, Mira and Rex. Four damaged lines skipped, one blank line ignored.",v=>v==="1"?"1 means your try is around the whole loop. Move it inside the loop.":v==="0"?"0 usually means FileNotFoundError: did you run the damaged-file cell?":null);
+const CT=[{id:"ct1",q:"How many cadets does the Worksheet B loader keep from roster_damaged.txt?",a:3},{id:"ct2",q:"How many damaged lines does it report?",a:4},{id:"ct3",q:"Which squad has two cadets in the loaded roster?",a:["falcon"]}];
+CT.forEach(c=>{const d=document.createElement("div");d.className="q";d.innerHTML='<span class="tier t-s">30 XP</span><div class="prompt">'+c.q+'</div><div class="answer-in"><label for="in-'+c.id+'" style="position:absolute;left:-9999px">Answer</label><input id="in-'+c.id+'" autocomplete="off" placeholder="Answer"><button class="btn ghost" type="button">Check</button></div><div class="fb" aria-live="polite"></div>';$("c-typed").appendChild(d);typed(d,c.id,c.a,30,"Correct!")});
+
+/* inspector */
+const INS=[["Nova,Falcon,88","ok"],["Kai,Viper,seventy-four","value"],["Mira,Falcon,91","ok"],["Jett,Orca","index"],["Rex,Viper, 82","ok"],["Luna,Falcon,9.5","value"],["","blank"],["Ash;Orca;70","index"]];
+const WHY={ok:"Three parts and a whole-number score.",value:"int() can't turn this into a whole number.",index:"Fewer than 3 parts, so parts[2] doesn't exist.",blank:"Empty after strip(), so continue skips it."};
+const LBL={ok:"Loads OK",value:"ValueError",index:"IndexError",blank:"Skipped (blank)"};
+$("inspector").innerHTML=INS.map(([l,a],i)=>'<div class="irow" id="ins'+i+'"><span class="ln">'+(i+1)+'</span><code class="iline">'+(l?esc(l):'<i>(blank line)</i>')+'</code><label for="sel'+i+'" style="position:absolute;left:-9999px">Verdict for line '+(i+1)+'</label><select id="sel'+i+'"><option value="">Verdict…</option>'+Object.entries(LBL).map(([k,v])=>'<option value="'+k+'">'+v+"</option>").join("")+'</select><span class="iwhy"></span></div>').join("");
+$("inspCheck").addEventListener("click",()=>{let n=0,unanswered=0;INS.forEach(([l,a],i)=>{const v=$("sel"+i).value,row=$("ins"+i),w=row.querySelector(".iwhy");row.classList.remove("right","wrong");
+  if(!v){unanswered++;w.textContent="";return}
+  if(v===a){n++;row.classList.add("right");w.textContent="✓ "+WHY[a];award("ins"+i,15)}else{row.classList.add("wrong");w.textContent="✗ Look again."}});
+  $("inspScore").className="fb "+(n===8?"ok":"no");$("inspScore").textContent=n+"/8 correct"+(unanswered?" · "+unanswered+" unanswered":"")+(n===8?". 3 lines load: Nova, Mira, Rex.":"")});
+
+/* exit quiz */
+const QZ=[
+ {id:"x1",prompt:"Which mode adds to the end of a file without deleting anything?",opts:['"r"','"w"','"a"'],a:2,why:'"a" is append.'},
+ {id:"x2",prompt:"Why use <code>with open(...) as file:</code>?",opts:["It makes the file smaller","It closes the file automatically when the block ends","It stops all errors"],a:1,why:"The file is closed for you, even if something goes wrong."},
+ {id:"x3",prompt:"What does <code>line.strip()</code> remove?",opts:["All the commas","Spaces and the newline at the start and end","The first word"],a:1,why:"Without it, the last value would end in \\n."},
+ {id:"x4",prompt:"Which error do you get when opening a missing file in \"r\" mode?",opts:["FileNotFoundError","ValueError","IndexError"],a:0,why:"Catch it and start with an empty roster."},
+ {id:"x5",prompt:"Why put <code>try</code>/<code>except</code> <em>inside</em> the loop when loading?",opts:["It runs faster","One bad line is skipped and the rest still load","Python requires it"],a:1,why:"Around the whole loop, the first bad line stops everything."}
+];
+const quiz=$("quiz");
+QZ.forEach((q,i)=>{const d=document.createElement("div");d.className="q";d.innerHTML='<div class="prompt">'+(i+1)+". "+q.prompt+'</div><div class="opts">'+q.opts.map((o,j)=>'<label><input type="radio" name="'+q.id+'" value="'+j+'"><span>'+o+"</span></label>").join("")+'</div><div class="fb"></div>';quiz.appendChild(d)});
+quiz.addEventListener("submit",e=>{e.preventDefault();let sc=0;QZ.forEach((q,i)=>{const c=quiz.querySelector('input[name="'+q.id+'"]:checked'),fb=quiz.children[i].querySelector(".fb");
+  if(!c){fb.className="fb no";fb.textContent="Not answered.";return}
+  if(+c.value===q.a){sc++;fb.className="fb ok";fb.innerHTML="✓ "+q.why;award(q.id,10)}else{fb.className="fb no";fb.innerHTML="✗ "+q.why}});
+  $("quizScore").textContent=sc+"/5 correct"+(sc===5?". Records secured!":"")});
+$("quizReset").addEventListener("click",()=>{quiz.reset();quiz.querySelectorAll(".fb").forEach(f=>{f.textContent="";f.className="fb"});$("quizScore").textContent=""});
+
+/* reset */
+let armed=false;
+$("resetAll").addEventListener("click",()=>{if(!armed){armed=true;$("resetMsg").textContent="Click again to wipe your XP and answers on this device.";setTimeout(()=>{armed=false;$("resetMsg").textContent=""},3000);return}
+  S={xp:{}};save();location.reload()});
+
+prepCode(document);renderRank();
+})();
+</script>
+
+</body>
+</html>

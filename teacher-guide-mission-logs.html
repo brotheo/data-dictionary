@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Records Desk · Teacher Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&family=Special+Elite&display=swap">
+<style>
+/* Layout: case-file agency. Sticky command bar (views + class timer + rank), single reading column of "mission" sections, evidence board accents. */
+:root{
+  --paper:#eef2f7; --card:#ffffff; --ink:#16233a; --muted:#56667e; --line:#d5deea;
+  --accent:#1f5fd1; --accent-soft:#e3ecfc; --mark:#ffd84a; --onmark:#1d1600;
+  --pin:#cf3e36; --pin-soft:#fbe7e5; --ok:#1b7f53; --ok-soft:#e2f4ea;
+  --codebg:#0f1a2b; --codefg:#e2eaf6; --codemute:#7f93b2; --codestr:#9fe0b0; --codekw:#ffcf5c; --codenum:#ffa38f;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+  --stamp:"Special Elite", "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0d1420; --card:#151f30; --ink:#e5ecf6; --muted:#9aa9c0; --line:#26354d;
+  --accent:#78a6ff; --accent-soft:#1b2a45; --mark:#e9c234; --onmark:#1d1600;
+  --pin:#ff776d; --pin-soft:#3a1f22; --ok:#52c690; --ok-soft:#14302a;
+  --codebg:#090f1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0d1420; --card:#151f30; --ink:#e5ecf6; --muted:#9aa9c0; --line:#26354d;
+  --accent:#78a6ff; --accent-soft:#1b2a45; --mark:#e9c234; --onmark:#1d1600;
+  --pin:#ff776d; --pin-soft:#3a1f22; --ok:#52c690; --ok-soft:#14302a;
+  --codebg:#090f1a; color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{background:var(--paper);color:var(--ink);font:17px/1.6 var(--body)}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+code{font-family:var(--mono);font-size:.88em;background:var(--accent-soft);padding:.08em .35em;border-radius:5px}
+h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
+h2{font-size:clamp(1.6rem,4vw,2.2rem);font-weight:800}
+h3{font-size:1.2rem;font-weight:600;margin-top:1.6rem}
+p{margin:.5rem 0 1rem;max-width:68ch}
+ul,ol{padding-left:1.3rem;max-width:68ch}li{margin:.25rem 0}
+.hl{background:linear-gradient(transparent 58%,var(--mark) 58%);color:inherit;padding:0 .1em}
+
+/* command bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--card);border-bottom:1px solid var(--line);padding-inline:16px}
+.bar-in{max-width:1080px;margin:auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding-block:9px}
+.brand{font-family:var(--stamp);font-size:.95rem;letter-spacing:.04em;color:var(--pin);white-space:nowrap}
+.tabs{display:flex;gap:4px;background:var(--paper);padding:4px;border-radius:999px}
+.tabs a{font-weight:700;text-decoration:none;color:var(--muted);padding:6px 14px;border-radius:999px;font-size:.92rem}
+.tabs a[aria-current="page"]{background:var(--ink);color:var(--card)}
+.timer{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
+.timer select{font:600 .85rem var(--body);border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;padding:5px 6px;max-width:150px}
+.clock{font:600 1.15rem var(--mono);font-variant-numeric:tabular-nums;min-width:4.2ch;text-align:center}
+.clock.done{color:var(--pin);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+.ibtn{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;padding:5px 9px;font:700 .82rem var(--body);cursor:pointer}
+.ibtn:hover{border-color:var(--accent)}
+.rank{display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:700;background:var(--mark);color:var(--onmark);padding:5px 11px;border-radius:999px;white-space:nowrap}
+.rank small{font-family:var(--mono);font-weight:600}
+
+/* layout */
+.wrap{max-width:1080px;margin:auto;padding:28px 16px 70px}
+.view[hidden]{display:none}
+.hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:28px;align-items:end;padding-block:18px 30px;border-bottom:2px dashed var(--line);margin-bottom:28px}
+.casetag{font-family:var(--stamp);color:var(--muted);font-size:.95rem}
+.hero h1{font-size:clamp(2.3rem,7vw,4.2rem);font-weight:800;letter-spacing:-.02em;margin:.3rem 0 .8rem}
+.hero p{font-size:1.1rem}
+.stamp{display:inline-block;font-family:var(--stamp);color:var(--pin);border:3px solid var(--pin);padding:4px 12px;transform:rotate(-4deg);font-size:1.05rem;letter-spacing:.06em;border-radius:4px;opacity:.85}
+.dossier{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px 18px 14px;box-shadow:6px 6px 0 var(--line);position:relative}
+.dossier::before{content:"";position:absolute;top:-9px;left:24px;width:16px;height:16px;border-radius:50%;background:var(--pin);box-shadow:0 2px 0 #0003}
+.dossier dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;font-size:.94rem}
+.dossier dt{color:var(--muted);font-family:var(--mono);font-size:.82rem;padding-top:2px}
+.dossier dd{margin:0;font-weight:700}
+
+/* run sheet */
+.runsheet{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:8px 0 6px}
+.runsheet button{all:unset;cursor:pointer;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.runsheet button:hover,.runsheet button.on{border-color:var(--accent);background:var(--accent-soft)}
+.runsheet b{font-size:.88rem;line-height:1.2}
+.runsheet span{font:600 .8rem var(--mono);color:var(--muted)}
+.runsheet .bar-fill{height:5px;border-radius:3px;background:var(--accent);margin-top:4px}
+.hint-small{font-size:.86rem;color:var(--muted)}
+
+section.mission{padding-block:34px;border-bottom:1px solid var(--line)}
+.eyebrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:8px;font:700 .78rem var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.eyebrow .num{font-family:var(--stamp);font-size:1rem;letter-spacing:.02em;color:var(--pin);text-transform:none}
+.mins{font-family:var(--mono);letter-spacing:0;text-transform:none;background:var(--paper);border:1px solid var(--line);padding:1px 8px;border-radius:999px}
+.lead{font-size:1.08rem}
+
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
+.panel h4{margin:0 0 6px;font:700 1rem var(--body)}
+.note{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0;max-width:72ch}
+.note.warn{border-color:var(--pin);background:var(--pin-soft)}
+.note.good{border-color:var(--ok);background:var(--ok-soft)}
+.teacher{font-size:.92rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;margin-top:14px}
+.teacher b{font-family:var(--stamp);color:var(--ink);font-weight:400}
+
+/* code */
+.code{position:relative;margin:12px 0 18px;min-width:0}
+.code pre{margin:0;overflow-x:auto;background:var(--codebg);color:var(--codefg);padding:18px 18px 16px;border-radius:10px;font:.88rem/1.6 var(--mono);white-space:pre}
+.code pre code{background:none;padding:0;font-size:inherit;color:inherit}
+.code .copy{position:absolute;top:8px;right:8px;border:1px solid #ffffff2e;background:#ffffff14;color:#e2eaf6;border-radius:6px;padding:4px 9px;font:700 .75rem var(--body);cursor:pointer}
+.code .copy:hover{background:#ffffff2a}
+.tk-b{background:var(--mark);color:var(--onmark);border-radius:3px;font-weight:600}
+.ws{background:var(--card);border:2px solid var(--ink);border-radius:12px;padding:16px 18px 6px;margin:22px 0;box-shadow:5px 5px 0 var(--line);min-width:0}
+.ws-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 12px}
+.ws-head h3{margin:0}
+.ws-tag{font-family:var(--stamp);color:var(--pin);font-size:.95rem}
+.tk-c{color:var(--codemute);font-style:italic}.tk-s{color:var(--codestr)}.tk-k{color:var(--codekw)}.tk-n{color:var(--codenum)}
+.out{font:.85rem/1.5 var(--mono);background:var(--paper);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;white-space:pre;overflow-x:auto;margin:-8px 0 16px}
+.out::before{content:"OUTPUT";display:block;font:700 .66rem var(--body);letter-spacing:.14em;color:var(--muted);margin-bottom:4px}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{padding:8px 11px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--paper)}
+tbody tr:last-child td{border-bottom:0}
+tr.fail td{background:var(--pin-soft)}
+td.num,th.num{text-align:right}
+
+/* explorer */
+.explorer{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:14px}
+.controls{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end;margin-bottom:12px}
+.controls label{display:flex;flex-direction:column;gap:3px;font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.04em}
+.controls select,.controls input{font:600 .95rem var(--body);border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--paper);color:var(--ink);min-width:0}
+.livecode{font:.85rem var(--mono);background:var(--codebg);color:var(--codestr);padding:10px 12px;border-radius:8px;overflow-x:auto;white-space:pre;margin-bottom:10px}
+.livecode::before{content:"pandas ▸ ";color:var(--codemute)}
+.count{font-weight:700;font-size:.9rem;margin-bottom:8px}
+
+/* buttons, reveals */
+.btn{font:700 .92rem var(--body);border:0;border-radius:9px;padding:9px 15px;cursor:pointer;background:var(--accent);color:#fff}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.ghost:hover{border-color:var(--accent)}
+.btn.done{background:var(--ok)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;margin:12px 0}
+details>summary{cursor:pointer;padding:11px 16px;font-weight:700;list-style:none}
+details>summary::before{content:"▸ ";color:var(--accent)}
+details[open]>summary::before{content:"▾ "}
+details>.inner{padding:0 16px 14px}
+.tier{display:inline-block;font:700 .7rem var(--body);letter-spacing:.12em;padding:3px 8px;border-radius:999px;margin-bottom:6px}
+.t-b{background:#f1dcc6;color:#6d3f12}.t-s{background:#dde3ec;color:#334257}.t-g{background:#ffe9a3;color:#5b4300}
+.xp{font:600 .78rem var(--mono);color:var(--muted)}
+.complete{margin-top:22px;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+
+/* predictions */
+.predict{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.predict .panel label{display:block;font-weight:700;margin-bottom:8px}
+.predict input,.predict select{width:100%;font:600 1rem var(--body);border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--paper);color:var(--ink)}
+.truth{margin-top:10px;font-size:.93rem;padding:8px 10px;border-radius:8px;background:var(--ok-soft)}
+
+/* quiz + arena cards */
+.q{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0;min-width:0}
+.q .prompt{font-weight:700;margin-bottom:8px}
+.opts{display:grid;gap:6px}
+.opts label{display:flex;gap:9px;align-items:flex-start;padding:7px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--paper)}
+.opts label:hover{border-color:var(--accent)}
+.opts input{margin-top:5px}
+.fb{margin-top:8px;font-size:.93rem;font-weight:700}
+.fb.ok{color:var(--ok)}.fb.no{color:var(--pin)}
+.q.solved{border-color:var(--ok);box-shadow:inset 4px 0 0 var(--ok)}
+.q.flash{animation:flash 1.4s ease 2}
+@keyframes flash{50%{box-shadow:0 0 0 5px var(--mark)}}
+
+/* arena */
+.arena-hero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:start;padding-block:10px 26px;border-bottom:2px dashed var(--line)}
+.board{background:var(--codebg);color:var(--codefg);border-radius:12px;padding:16px;min-width:0}
+.board h3{margin:0 0 10px;color:var(--codekw);font-size:1rem;letter-spacing:.1em;text-transform:uppercase;font-family:var(--body)}
+.team{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto auto;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #ffffff1a}
+.team input{background:transparent;border:0;color:var(--codefg);font:700 .95rem var(--body);min-width:0;width:100%}
+.team .pts{font:600 1.2rem var(--mono);font-variant-numeric:tabular-nums;min-width:3ch;text-align:right;color:var(--codekw)}
+.team button{border:1px solid #ffffff30;background:#ffffff12;color:var(--codefg);border-radius:6px;padding:3px 7px;font:700 .78rem var(--body);cursor:pointer}
+.team.lead .pts::after{content:" ★"}
+.round-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+.answer-in{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.answer-in input{font:600 1rem var(--mono);border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--paper);color:var(--ink);width:12rem;max-width:100%}
+.hintline{font-size:.9rem;color:var(--muted);margin-top:6px}
+.dip{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+
+footer{padding:28px 16px;text-align:center;color:var(--muted);font-size:.85rem;border-top:1px solid var(--line)}
+
+@media (max-width:860px){
+  .hero,.arena-hero{grid-template-columns:1fr}
+  .runsheet{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .grid3,.predict{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr}
+  .timer{margin-left:0}
+}
+@media (max-width:480px){.runsheet{grid-template-columns:repeat(2,minmax(0,1fr))}body{font-size:16px}}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<style>
+.tp{max-width:960px;margin:auto;padding:28px 16px 60px}
+.tp h2{margin-top:2.2rem;padding-top:1.2rem;border-top:2px dashed var(--line)}
+.tp h2:first-of-type{border-top:0}
+.toc{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0}
+.toc a{font:700 .85rem var(--body);text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);padding:5px 11px;border-radius:999px}
+.toc a:hover{border-color:var(--accent)}
+td{white-space:normal;vertical-align:top}
+.k{font-family:var(--mono);font-weight:600;color:var(--ok)}
+.min{font-family:var(--mono);font-weight:600;white-space:nowrap}
+@media print{.toc,.copy{display:none!important}body{background:#fff}.code pre{white-space:pre-wrap;background:#f3f3f3!important;color:#111!important}.code pre span{color:#111!important;background:none!important}section,table,.code{break-inside:avoid}.bar{display:none}}
+</style>
+
+<div class="bar"><div class="bar-in"><span class="brand">RECORDS DESK · TEACHER GUIDE</span><span class="hint-small" style="margin-left:auto">Not for students: contains every answer</span></div></div>
+<div class="tp">
+<header class="hero">
+  <div>
+    <div class="casetag">Teacher guide · Python · files and exceptions · 90 minutes</div>
+    <h1>Mission Logs and Corrupted Records</h1>
+    <p>Lesson plan, teacher moves, misconceptions and the full answer key. Every answer below was checked by running the code, including the full Records Desk program run twice with test input.</p>
+    <span class="stamp">TEACHER COPY · ANSWERS INSIDE</span>
+  </div>
+  <aside class="dossier"><dl>
+    <dt>Duration</dt><dd>90 minutes</dd>
+    <dt>Prior</dt><dd>Lists, dictionaries, loops, functions, input()</dd>
+    <dt>New</dt><dd>open(), r/w/a modes, strip/split, try/except</dd>
+    <dt>Kit</dt><dd>Colab, Jupyter or IDLE (files are created in the working folder)</dd>
+    <dt>Student file</dt><dd>mission-logs-records-desk.html</dd>
+  </dl></aside>
+</header>
+
+<nav class="toc" aria-label="Contents"><a href="#plan">Lesson plan</a><a href="#before">Before the lesson</a><a href="#misc">Misconceptions</a><a href="#sim">Simulator</a><a href="#mc">Question keys</a><a href="#ins">Inspector</a><a href="#wsa">Worksheet A</a><a href="#wsb">Worksheet B</a><a href="#debug">Debug the desk</a><a href="#exit">Exit ticket</a><a href="#boss">Boss level</a><a href="#diff">Differentiation</a></nav>
+
+<div class="grid2">
+  <div class="panel"><h4>Learning objectives</h4><ul><li>Open files in read, write and append mode using <code>with</code></li><li>Save a list of dictionaries as comma-separated lines, and load it back</li><li>Name and predict FileNotFoundError, ValueError and IndexError</li><li>Use try/except so one bad record or a missing file doesn't crash the program</li></ul></div>
+  <div class="panel"><h4>Success criteria</h4><ul><li>Worksheet A reloads 5 cadets</li><li>Worksheet B loads 3 cadets and reports 4 damaged lines</li><li>Explains why the try goes inside the loop</li><li>Explains the difference between "w" and "a"</li></ul></div>
+</div>
+
+<h2 id="plan">Lesson plan</h2>
+<div class="tbl"><table><thead><tr><th>Time</th><th>Stage</th><th>Student does</th><th>Teacher does</th></tr></thead><tbody>
+<tr><td class="min">0–5</td><td><b>Power cut</b></td><td>Adds a cadet in the simulator, presses Power cut.</td><td>Ask "Where did the cadets go?" RAM vs disk. Challenge: "Can you beat the power cut?"</td></tr>
+<tr><td class="min">5–15</td><td><b>A1 Open a file</b></td><td>Runs the w/a/r example. Answers the "w wipes" question.</td><td>Stress that "w" wipes. Predict, then run.</td></tr>
+<tr><td class="min">15–30</td><td><b>A2 Save &amp; load</b></td><td>Runs save_roster and load_roster. Beats the power cut in the simulator.</td><td>Trace one record through the journey diagram on the board: dict → line → split → dict.</td></tr>
+<tr><td class="min">30–40</td><td><b>A3 Mission log + Worksheet A</b></td><td>Fills in Worksheet A; self-check answer is 5.</td><td>If he gets 6, he ran the cell twice: good moment to discuss state in notebooks.</td></tr>
+<tr><td class="min">40–48</td><td><b>B1 Crash gallery</b></td><td>Predicts the 4 errors. Crashes the simulator on purpose.</td><td>Read a real traceback together: last line = error type and message.</td></tr>
+<tr><td class="min">48–60</td><td><b>B2 try/except + inspector</b></td><td>Runs the examples, creates roster_damaged.txt, classifies the 8 lines.</td><td>Line 5 (<code>Rex,Viper, 82</code>) surprises everyone: int() ignores outer spaces.</td></tr>
+<tr><td class="min">60–75</td><td><b>B3 Worksheet B</b></td><td>Builds the unbreakable loader. Self-check answer is 3.</td><td>If he gets 1, his try is around the whole loop. Don't tell him; ask him to trace line 2.</td></tr>
+<tr><td class="min">75–85</td><td><b>Debug the desk</b></td><td>5 broken desks + 3 code-cracker questions.</td><td>Desk 3 and Desk 4 are the key discussions.</td></tr>
+<tr><td class="min">85–90</td><td><b>Exit ticket</b></td><td>5 questions.</td><td>Set the Boss level (Records Desk program) as homework.</td></tr>
+</tbody></table></div>
+
+<h2 id="before">Before the lesson</h2>
+<ul>
+<li>In Colab, files appear in the folder panel on the left and disappear when the runtime resets. That's a good demonstration of "the disk" being part of the machine.</li>
+<li>In IDLE, files are saved next to the .py file. Students running from different folders may get FileNotFoundError: that's on-topic.</li>
+<li>The Boss level uses <code>input()</code> in a loop. It works in Colab and IDLE; some online editors handle <code>input()</code> poorly.</li>
+<li>XP is stored in the browser only. The simulator works offline once the page is open.</li>
+</ul>
+
+<h2 id="misc">Common misconceptions</h2>
+<div class="tbl"><table><thead><tr><th>What they write or think</th><th>What happens</th><th>Fix / question to ask</th></tr></thead><tbody>
+<tr><td>Uses <code>"w"</code> for the log</td><td>Only the last message survives</td><td>"What does w do if the file exists?"</td></tr>
+<tr><td>Forgets <code>"\n"</code> in write()</td><td>All records on one line; load fails with <code>ValueError: '88Kai'</code></td><td>Open the file and look at it.</td></tr>
+<tr><td>Forgets <code>int()</code> when loading</td><td>Scores are strings: <code>"9" &gt; "10"</code> is True, and sums crash</td><td>Print <code>type(cadet["score"])</code>.</td></tr>
+<tr><td>Thinks a variable "remembers" after the program stops</td><td>Roster empty after restart</td><td>Simulator power cut.</td></tr>
+<tr><td>One try around the whole loop</td><td>Stops at the first bad line (1 cadet loaded)</td><td>Trace line 2 step by step.</td></tr>
+<tr><td>Bare <code>except:</code></td><td>Hides typos and real bugs</td><td>Debug Desk 4.</td></tr>
+<tr><td>Thinks try/except "fixes" bad data</td><td>It only skips or handles it</td><td>"Where did Kai go?" He's not in the roster: someone should fix the file.</td></tr>
+<tr><td><code>.capitalize()</code>-style thinking: "Python would reject <code>Pip,,70</code>"</td><td>It loads with an empty squad</td><td>Exceptions only catch what Python can't do; data rules need your own if-checks.</td></tr>
+</tbody></table></div>
+
+<h2 id="sim">Simulator achievements</h2>
+<div class="tbl"><table><thead><tr><th>Badge</th><th>How</th><th class="num">XP</th></tr></thead><tbody>
+<tr><td>Beat the power cut</td><td>Save → Power cut → Load with at least one cadet</td><td class="num">50</td></tr>
+<tr><td>Crash the desk on purpose</td><td>Shield off: load a damaged or deleted file, or type a non-number score</td><td class="num">20</td></tr>
+<tr><td>Load a damaged file with the shield on</td><td>Save → Damage → shield on → Load</td><td class="num">50</td></tr>
+<tr><td>Survive a bad score</td><td>Shield on, type a non-number score, Add cadet</td><td class="num">30</td></tr>
+</tbody></table></div>
+<p class="hint-small">"Damage the file" adds these lines in turn: <code>Kai,Viper,seventy-four</code>, <code>Jett,Orca</code>, <code>Luna,Falcon,9.5</code>, <code>Ash;Orca;70</code>, a blank line. Damaged lines show in red.</p>
+
+<h2 id="mc">Question keys</h2>
+<div class="tbl"><table><thead><tr><th>Section</th><th>Question</th><th>Answer</th></tr></thead><tbody>
+<tr><td>A1</td><td>roster.txt after <code>open(..., "w")</code> + one write</td><td class="k">Only Zara</td></tr>
+<tr><td>A2</td><td><code>"Kai,Viper,74".split(",")</code></td><td class="k">["Kai", "Viper", "74"]</td></tr>
+<tr><td>B1</td><td>open missing file in "r"</td><td class="k">FileNotFoundError</td></tr>
+<tr><td>B1</td><td><code>int("seventy-four")</code></td><td class="k">ValueError</td></tr>
+<tr><td>B1</td><td><code>"Jett,Orca".split(",")[2]</code></td><td class="k">IndexError</td></tr>
+<tr><td>B1</td><td><code>int(" 82")</code></td><td class="k">82 (no error)</td></tr>
+</tbody></table></div>
+
+<h2 id="ins">Records inspector key</h2>
+<div class="tbl"><table><thead><tr><th>Line</th><th>Text</th><th>Verdict</th><th>Why</th></tr></thead><tbody>
+<tr><td>1</td><td><code>Nova,Falcon,88</code></td><td class="k">Loads OK</td><td></td></tr>
+<tr><td>2</td><td><code>Kai,Viper,seventy-four</code></td><td class="k">ValueError</td><td>Word, not digits</td></tr>
+<tr><td>3</td><td><code>Mira,Falcon,91</code></td><td class="k">Loads OK</td><td></td></tr>
+<tr><td>4</td><td><code>Jett,Orca</code></td><td class="k">IndexError</td><td>Only 2 parts</td></tr>
+<tr><td>5</td><td><code>Rex,Viper, 82</code></td><td class="k">Loads OK</td><td>int() ignores outer spaces</td></tr>
+<tr><td>6</td><td><code>Luna,Falcon,9.5</code></td><td class="k">ValueError</td><td>int() won't take a decimal string</td></tr>
+<tr><td>7</td><td>(blank)</td><td class="k">Skipped</td><td><code>continue</code> before split</td></tr>
+<tr><td>8</td><td><code>Ash;Orca;70</code></td><td class="k">IndexError</td><td>Semicolons, so split(",") gives 1 part</td></tr>
+</tbody></table></div>
+
+<h2 id="wsa">Worksheet A solution</h2>
+<p class="hint-small">Assumes the starting roster cell (4 cadets) was run first.</p>
+<div class="code"><pre><code>def save_roster(roster, filename):
+    with open(filename, "w") as file:
+        for cadet in roster:
+            file.write(f"{cadet['name']},{cadet['squad']},{cadet['score']}\n")
+
+
+def load_roster(filename):
+    roster = []
+    with open(filename, "r") as file:
+        for line in file:
+            line = line.strip()
+            parts = line.split(",")
+            cadet = {"name": parts[0], "squad": parts[1], "score": int(parts[2])}
+            roster.append(cadet)
+    return roster
+
+
+def log_event(message):
+    with open("mission_log.txt", "a") as file:
+        file.write(message + "\n")
+
+
+roster.append({"name": "Zara", "squad": "Falcon", "score": 79})
+save_roster(roster, "roster.txt")
+log_event("Zara added and roster saved")
+
+reloaded = load_roster("roster.txt")
+print("Cadets after reload:", len(reloaded))
+print("Last cadet:", reloaded[-1])</code></pre></div>
+<div class="out">Cadets after reload: 5
+Last cadet: {'name': 'Zara', 'squad': 'Falcon', 'score': 79}</div>
+
+<h2 id="wsb">Worksheet B solution</h2>
+<div class="code"><pre><code>def load_roster(filename):
+    roster = []
+    damaged = 0
+    try:
+        with open(filename, "r") as file:
+            line_number = 0
+            for line in file:
+                line_number += 1
+                line = line.strip()
+                if line == "":
+                    continue
+
+                try:
+                    parts = line.split(",")
+                    cadet = {"name": parts[0], "squad": parts[1], "score": int(parts[2])}
+                    roster.append(cadet)
+                except (IndexError, ValueError) as error:
+                    damaged += 1
+                    print("Line", line_number, "damaged:", line, "-&gt;", type(error).__name__)
+
+    except FileNotFoundError:
+        print("No file called", filename, "- starting with an empty roster.")
+
+    print("Loaded", len(roster), "cadets,", damaged, "damaged lines skipped.")
+    return roster
+
+
+good = load_roster("roster_damaged.txt")
+print([cadet["name"] for cadet in good])
+nothing = load_roster("ghost.txt")</code></pre></div>
+<div class="out">Line 2 damaged: Kai,Viper,seventy-four -&gt; ValueError
+Line 4 damaged: Jett,Orca -&gt; IndexError
+Line 6 damaged: Luna,Falcon,9.5 -&gt; ValueError
+Line 8 damaged: Ash;Orca;70 -&gt; IndexError
+Loaded 3 cadets, 4 damaged lines skipped.
+['Nova', 'Mira', 'Rex']
+No file called ghost.txt - starting with an empty roster.
+Loaded 0 cadets, 0 damaged lines skipped.</div>
+<p class="hint-small">Accept <code>except ValueError:</code> and <code>except IndexError:</code> as two separate blocks. If he gets 1 cadet, the inner try is missing; 0 cadets plus the "No file" message means roster_damaged.txt wasn't created.</p>
+
+<h2 id="debug">Debug the desk key</h2>
+<div class="tbl"><table><thead><tr><th>Desk</th><th>Fault</th><th>Answer</th></tr></thead><tbody>
+<tr><td>1</td><td>No <code>"\n"</code> in write()</td><td class="k">One long line; load fails with ValueError '88Kai'</td></tr>
+<tr><td>2</td><td>log_event uses "w"</td><td class="k">Only C</td></tr>
+<tr><td>3</td><td>try around the whole loop</td><td class="k">1 cadet (Nova)</td></tr>
+<tr><td>4</td><td>Bare except hides the <code>apend</code> typo</td><td class="k">Hides real bugs (AttributeError)</td></tr>
+<tr><td>5</td><td>try / except / else / finally</td><td class="k">score ok, desk checked</td></tr>
+</tbody></table></div>
+<p>Code cracker: <span class="k">3</span> cadets · <span class="k">4</span> damaged lines · <span class="k">Falcon</span> (Nova and Mira).</p>
+
+<h2 id="exit">Exit ticket key</h2>
+<div class="tbl"><table><thead><tr><th>Q</th><th>Answer</th><th>If missed, revisit</th></tr></thead><tbody>
+<tr><td>1</td><td><code>"a"</code></td><td>A1, Desk 2</td></tr>
+<tr><td>2</td><td>Closes the file automatically</td><td>A1 note</td></tr>
+<tr><td>3</td><td>Spaces and newline at the ends</td><td>A2 journey</td></tr>
+<tr><td>4</td><td>FileNotFoundError</td><td>B1</td></tr>
+<tr><td>5</td><td>One bad line is skipped; the rest still load</td><td>B3, Desk 3</td></tr>
+</tbody></table></div>
+
+<h2 id="boss">Boss level · Records Desk solution</h2>
+<p class="hint-small">Needs save_roster and log_event from Worksheet A and load_roster from Worksheet B above it.</p>
+<div class="code"><pre><code>FILENAME = "roster.txt"
+roster = load_roster(FILENAME)
+log_event("Desk started")
+
+while True:
+    print("\n=== ACADEMY RECORDS DESK ===")
+    print("1. Show roster   2. Add cadet   3. Save   4. Save and quit")
+    choice = input("Choose 1-4: ")
+
+    if choice == "1":
+        for cadet in roster:
+            print(cadet["name"], "|", cadet["squad"], "|", cadet["score"])
+
+    elif choice == "2":
+        name = input("Name: ")
+        squad = input("Squad: ")
+        try:
+            score = int(input("Score: "))
+        except ValueError:
+            print("Score must be a whole number. Cadet not added.")
+        else:
+            roster.append({"name": name, "squad": squad, "score": score})
+            log_event("Added " + name)
+            print(name, "added.")
+
+    elif choice == "3":
+        save_roster(roster, FILENAME)
+        log_event("Roster saved")
+
+    elif choice == "4":
+        save_roster(roster, FILENAME)
+        log_event("Desk closed")
+        print("Roster saved. Goodbye, Commander.")
+        break
+
+    else:
+        print("Unknown option. Type 1, 2, 3 or 4.")</code></pre></div>
+<h3>Tested run</h3>
+<p>Run 1 (no roster.txt): inputs <code>2, Orion, Viper, abc</code> → "Score must be a whole number. Cadet not added." Then adds Orion (81) and Pip (70), <code>7</code> → "Unknown option", <code>1</code> shows both, <code>4</code> saves and quits. Run 2 loads both cadets back.</p>
+<div class="out">mission_log.txt after both runs:
+Desk started
+Added Orion
+Added Pip
+Desk closed
+Desk started
+Desk closed</div>
+<h3>Homework rubric · 20 points</h3>
+<div class="tbl"><table><thead><tr><th>Criterion</th><th class="num">Pts</th><th>Full marks</th></tr></thead><tbody>
+<tr><td>Loads on start, survives missing file</td><td class="num">4</td><td>Test 1 passes</td></tr>
+<tr><td>Validates score with try/except ValueError</td><td class="num">4</td><td>Test 2 passes; named exception, not bare except</td></tr>
+<tr><td>Saves and reloads correctly</td><td class="num">4</td><td>Test 3 passes</td></tr>
+<tr><td>Menu handles unknown input</td><td class="num">2</td><td>Test 4 passes</td></tr>
+<tr><td>Log uses "a" and records every action</td><td class="num">3</td><td>Test 5 passes</td></tr>
+<tr><td>Stretch goal attempted</td><td class="num">3</td><td>Top cadet, own validation, or finally</td></tr>
+</tbody></table></div>
+
+<h2 id="diff">Differentiation</h2>
+<div class="grid3">
+<div class="panel"><h4>Support</h4><ul><li>Open the "Stuck?" hints straight away</li><li>Do Worksheet A with the journey diagram on screen</li><li>Skip Desk 4 and Desk 5</li></ul></div>
+<div class="panel"><h4>Core</h4><ul><li>Worksheets A and B</li><li>All inspector lines and Desks 1–3</li></ul></div>
+<div class="panel"><h4>Stretch</h4><ul><li>Save as JSON with <code>json.dump</code> / <code>json.load</code> and compare with the comma format</li><li>Write bad lines to a <code>quarantine.txt</code> file instead of just printing them</li><li>Reject blank names and scores outside 0–100 with <code>raise ValueError(...)</code></li></ul></div>
+</div>
+</div>
+<footer>Academy Records Desk · Teacher guide · Python files and exceptions</footer>
+
+<script>
+(function(){
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const KW=/^(def|return|if|else|elif|for|in|import|as|None|True|False|and|or|not|lambda|print|is)$/;
+function hl(src){const re=/(#[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')|\b(\d+\.?\d*)\b|\b([A-Za-z_]\w*)\b/g;let o="",l=0,m;
+ while((m=re.exec(src))){o+=esc(src.slice(l,m.index));
+  if(m[1])o+='<span class="tk-c">'+esc(m[1])+"</span>";else if(m[2])o+='<span class="tk-s">'+esc(m[2])+"</span>";else if(m[3])o+='<span class="tk-n">'+m[3]+"</span>";else o+=KW.test(m[4])?'<span class="tk-k">'+m[4]+"</span>":esc(m[4]);l=re.lastIndex}
+ return o+esc(src.slice(l))}
+document.querySelectorAll(".code").forEach(box=>{const c=box.querySelector("code"),raw=c.textContent;c.innerHTML=hl(raw);
+ const b=document.createElement("button");b.className="copy";b.type="button";b.textContent="Copy";
+ b.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(raw);b.textContent="Copied"}catch(e){const r=document.createRange();r.selectNodeContents(c);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent="Selected"}setTimeout(()=>b.textContent="Copy",1500)});box.appendChild(b)});
+})();
+</script>
+</body>
+</html>
